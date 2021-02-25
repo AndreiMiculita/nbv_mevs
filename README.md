@@ -2,4 +2,5 @@ At the moment, a collection of scripts (not written by me, but maybe modified by
 
 |Script | Source|
 |---|----|
+|`multi-view-tool` | https://github.com/tparisotto/multi-view-tool|
 |`soft_renderer` | https://github.com/craigleili/3DLocalMultiViewDesc|
