@@ -1,3 +1,6 @@
 [submodule "multi-view-tool"]
 	path = multi-view-tool
 	url = git@github.com:tparisotto/multi-view-tool.git
+[submodule "neural_renderer"]
+	path = neural_renderer
+	url = git@github.com:daniilidis-group/neural_renderer.git
