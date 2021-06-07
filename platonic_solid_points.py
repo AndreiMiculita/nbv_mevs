@@ -12,7 +12,7 @@ but you probably want to set them to something else.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from equal_axes_3d_plot import set_axes_equal
+from plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 
 phi = (1 + np.sqrt(5)) / 2  # the golden ratio, appears in some of the coordinates
@@ -95,10 +95,12 @@ def make_icosahedron_vertices(circumradius=np.sqrt(phi+2)) -> np.array:
 def main():
     vertices = make_tetrahedron_vertices()
     print(vertices)
+
     ax = plt.axes(projection='3d')
     ax.scatter3D(*vertices.transpose())
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
+    show_3d_axes_rgb(ax)
     plt.show()
 
 

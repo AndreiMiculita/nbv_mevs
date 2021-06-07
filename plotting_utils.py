@@ -29,3 +29,14 @@ def set_axes_equal(ax):
     ax.set_xlim3d([x_middle - plot_radius, x_middle + plot_radius])
     ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
+
+
+def show_3d_axes_rgb(ax):
+    # Make a 3D quiver plot
+    x, y, z = np.zeros((3, 1))
+    u, v, w = np.array([[1], [0], [0]])
+    ax.quiver(x, y, z, u, v, w, arrow_length_ratio=0.1, color='red')
+    u, v, w = np.array([[0], [1], [0]])
+    ax.quiver(x, y, z, u, v, w, arrow_length_ratio=0.1, color='green')
+    u, v, w = np.array([[0], [0], [1]])
+    ax.quiver(x, y, z, u, v, w, arrow_length_ratio=0.1, color='blue')

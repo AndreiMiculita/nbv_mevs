@@ -11,7 +11,7 @@ import tqdm
 import imageio
 
 import neural_renderer as nr
-from equal_axes_3d_plot import set_axes_equal
+from plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'neural_renderer/examples/data')
@@ -49,13 +49,10 @@ def main():
     for num, azimuth in enumerate(loop):
         loop.set_description('Drawing')
         eye = nr.get_points_from_angles(camera_distance, elevation, azimuth)
-        print(eye[2])
-        print(type(eye[2]))
         eye = (eye[0], eye[1], 2.0*eye[2])
         renderer.eye = eye
 
-        print(f"\nrenderer\n")
-        print(f"\n{renderer.eye}\n")
+        print(f"\nangle: {renderer.eye}\n")
         coords.append(renderer.eye)
         images, _, _ = renderer(vertices, faces, textures)  # [batch_size, RGB, image_size, image_size]
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))  # [image_size, image_size, RGB]
@@ -63,10 +60,12 @@ def main():
     coords_np = np.array(coords)
     np.set_printoptions(suppress=True)
     print(coords_np)
+
     ax = plt.axes(projection='3d')
     ax.scatter3D(*coords_np.transpose())
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
+    show_3d_axes_rgb(ax)
     plt.show()
     writer.close()
 
