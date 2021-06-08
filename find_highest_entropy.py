@@ -24,6 +24,7 @@ data_dir = os.path.join(current_dir, 'data')
 # * https://github.com/pytorch/pytorch/issues/9993
 # * https://pytorch.org/docs/master/special.html
 
+
 def entropy_loss(residual):
     # src https://github.com/pytorch/pytorch/issues/15829#issuecomment-843182236
     # residual.shape[0] -> batch size
@@ -51,10 +52,9 @@ def other_entropy(input_tensor):
     return entropy
 
 
-def entropy(p, dim = -1, keepdim=None):
+def yet_another_entropy(p, dim = -1, keepdim=None):
     # src: https://github.com/pytorch/pytorch/issues/9993
     return -torch.where(p > 0, p * p.log(), p.new([0.0])).sum(dim=dim, keepdim=keepdim)  # can be a scalar, when PyTorch.supports it
-
 
 
 class Model(nn.Module):
@@ -86,8 +86,6 @@ class Model(nn.Module):
         image = self.renderer(self.vertices, self.faces, mode='silhouettes')
         entropy = entr(image).mean() * 10.0
         loss = 1.0 / entropy
-        print(f"shape {loss.shape} {entropy}")
-        print(f"loss {loss}")
         return loss
 
 
