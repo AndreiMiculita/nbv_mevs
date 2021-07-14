@@ -1,18 +1,18 @@
 """
 Finding highest entropy locally
 """
-import os
 import argparse
 import glob
+import os
 
+import cv2
+import imageio
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-from skimage.io import imread, imsave
 import tqdm
-import imageio
+from skimage.io import imread, imsave
 from torch.special import entr
-
 
 import neural_renderer as nr
 
@@ -131,7 +131,8 @@ def main():
         loss.backward()
         optimizer.step()
         images, _, _ = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
-        image = images.detach().cpu().numpy()[0].transpose(1,2,0)
+        image = images.detach().cpu().numpy()[0].transpose(1,2,0).copy()
+        cv2.putText(image, f"loss: {loss.item():.2f}", (6, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
         imsave('/tmp/_tmp_%04d.png' % i, image)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
         if loss.item() < 70:
