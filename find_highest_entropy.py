@@ -14,6 +14,7 @@ import tqdm
 from skimage.io import imread, imsave
 from torch.special import entr
 
+import canny_filter
 import neural_renderer as nr
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -57,6 +58,10 @@ def yet_another_entropy(p, dim = -1, keepdim=None):
     return -torch.where(p > 0, p * p.log(), p.new([0.0])).sum(dim=dim, keepdim=keepdim)  # can be a scalar, when PyTorch.supports it
 
 
+def edge_detection_loss(input_tensor):
+    return canny_filter.CannyFilter().forward(img=input_tensor)
+
+
 class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
         super(Model, self).__init__()
@@ -84,7 +89,7 @@ class Model(nn.Module):
 
     def forward(self):
         image = self.renderer(self.vertices, self.faces, mode='silhouettes')
-        entropy = entr(image).mean() * 10.0
+        entropy = edge_detection_loss(image).mean()
         loss = 1.0 / entropy
         return loss
 
