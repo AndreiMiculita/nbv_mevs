@@ -23,13 +23,13 @@ class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
         super(Model, self).__init__()
         # load .obj
-        mesh_path = "data/ModelNet10/bed/train/bed_0001.off"
-
-        mesh = o3d.io.read_triangle_mesh(mesh_path)
-
-        vertices = mesh.vertices
-        faces = mesh.triangles
-        # vertices, faces = nr.load_obj(filename_obj)
+        # mesh_path = "data/ModelNet10/bed/train/bed_0001.off"
+        #
+        # mesh = o3d.io.read_triangle_mesh(mesh_path)
+        #
+        # vertices = mesh.vertices
+        # faces = mesh.triangles
+        vertices, faces = nr.load_obj(filename_obj)
         self.register_buffer('vertices', vertices[None, :, :])
         self.register_buffer('faces', faces[None, :, :])
 
