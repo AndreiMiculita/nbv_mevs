@@ -9,12 +9,13 @@ import cv2
 import torch
 import torch.nn as nn
 import numpy as np
-import open3d as o3d
 from skimage.io import imread, imsave
 import tqdm
 import imageio
 
 import neural_renderer as nr
+
+from load_off import load_off
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
@@ -23,13 +24,10 @@ class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
         super(Model, self).__init__()
         # load .obj
-        # mesh_path = "data/ModelNet10/bed/train/bed_0001.off"
-        #
-        # mesh = o3d.io.read_triangle_mesh(mesh_path)
-        #
-        # vertices = mesh.vertices
-        # faces = mesh.triangles
-        vertices, faces = nr.load_obj(filename_obj)
+        mesh_path = "data/ModelNet10/sofa/train/sofa_0001.off"
+
+        vertices, faces = load_off(mesh_path)
+
         self.register_buffer('vertices', vertices[None, :, :])
         self.register_buffer('faces', faces[None, :, :])
 
@@ -78,7 +76,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
     parser.add_argument('-ir', '--filename_ref', type=str, default=os.path.join(data_dir, 'example4_ref.png'))
-    parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'example4_result.gif'))
+    parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'example4_result.mp4'))
     parser.add_argument('-mr', '--make_reference_image', type=int, default=0)
     parser.add_argument('-g', '--gpu', type=int, default=0)
     args = parser.parse_args()
