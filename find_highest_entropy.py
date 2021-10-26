@@ -17,6 +17,8 @@ from torch.special import entr
 import canny_filter
 import neural_renderer as nr
 
+from load_off import load_off
+
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
 
@@ -66,7 +68,10 @@ class Model(nn.Module):
     def __init__(self, filename_obj):
         super(Model, self).__init__()
         # load .obj
-        vertices, faces = nr.load_obj(filename_obj)
+        mesh_path = "data/ModelNet10/sofa/train/sofa_0001.off"
+
+        vertices, faces = load_off(mesh_path)
+
         self.register_buffer('vertices', vertices[None, :, :])
         self.register_buffer('faces', faces[None, :, :])
 
@@ -117,9 +122,11 @@ def main():
         loss.backward()
         optimizer.step()
         images, _, _ = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
-        image = images.detach().cpu().numpy()[0].transpose(1,2,0).copy()
-        cv2.putText(image, f"loss: {loss.item():.2f}", (6, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (1, 1, 1), 2, cv2.LINE_AA)
-        imsave('/tmp/_tmp_%04d.png' % i, image)
+        image = (images.detach().cpu().numpy()[0].transpose(1,2,0).copy() * 255).astype(np.uint8)
+        edges = cv2.cvtColor(cv2.Canny(image, 30, 150), cv2.COLOR_GRAY2BGR)
+        concat = cv2.hconcat([image, edges])
+        cv2.putText(concat, f"loss: {loss.item():.2f}", (6, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+        imsave('/tmp/_tmp_%04d.png' % i, concat)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
         if loss.item() < 70:
             break
