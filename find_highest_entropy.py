@@ -34,7 +34,6 @@ def entropy_loss(residual):
     # residual.shape[1] -> Number of channels
     # residual.shape[2] -> Width
     # residual.shape[3] -> Height
-    print(residual.shape)
     entropy = torch.zeros(residual.shape[0], 1, requires_grad=True).cuda()
     image_size = float(residual.shape[1] * residual.shape[2] * residual.shape[3])
     for i in range(0, residual.shape[0]):  # loop over batch
@@ -61,16 +60,21 @@ def yet_another_entropy(p, dim = -1, keepdim=None):
 
 
 def edge_detection_loss(input_tensor):
-    return canny_filter.CannyFilter().forward(img=input_tensor)
+    filter = canny_filter.CannyFilter(use_cuda=True)
+    # for param in filter.parameters():
+    #     param.requires_grad = False
+    blurred, grad_x, grad_y, grad_magnitude, grad_orientation = filter.forward(img=input_tensor)
+    # print("grad_magnitude.shape", grad_magnitude.shape)
+    # imsave('/tmp/grad_magnitude.png', grad_magnitude.data.cpu().numpy()[0][0])
+    # exit(0)
+    return grad_magnitude
 
 
 class Model(nn.Module):
     def __init__(self, filename_obj):
         super(Model, self).__init__()
-        # load .obj
-        mesh_path = "data/ModelNet10/sofa/train/sofa_0001.off"
-
-        vertices, faces = load_off(mesh_path)
+        # Load mesh vertices and faces
+        vertices, faces = load_off(filename_obj)
 
         self.register_buffer('vertices', vertices[None, :, :])
         self.register_buffer('faces', faces[None, :, :])
@@ -81,17 +85,21 @@ class Model(nn.Module):
         self.register_buffer('textures', textures)
 
         # camera parameters
-        self.camera_position = nn.Parameter(torch.from_numpy(np.array([6, 10, -14], dtype=np.float32)))
+        self.camera_position = nn.Parameter(torch.from_numpy(np.array([3, 5, -7], dtype=np.float32)))
 
         # setup renderer
         renderer = nr.Renderer(camera_mode='look_at')
         renderer.eye = self.camera_position
         self.renderer = renderer
 
+        self.entropy = 0
+
     def forward(self):
         image = self.renderer(self.vertices, self.faces, mode='silhouettes')
-        entropy = entr(image).mean() * 10.0
-        loss = 1.0 / entropy
+        self.entropy = edge_detection_loss(image[np.newaxis, ...])
+        print("entropy.mean()", self.entropy.mean())
+        loss = 10000.0 / self.entropy.mean()
+        self.image = image
         return loss
 
 
@@ -106,7 +114,7 @@ def make_gif(filename):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
-    parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'find_entr_result.gif'))
+    parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'find_entr_result.mp4'))
     parser.add_argument('-g', '--gpu', type=int, default=0)
     args = parser.parse_args()
 
@@ -121,11 +129,22 @@ def main():
         loss = model()
         loss.backward()
         optimizer.step()
-        images, _, _ = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
-        image = (images.detach().cpu().numpy()[0].transpose(1,2,0).copy() * 255).astype(np.uint8)
-        edges = cv2.cvtColor(cv2.Canny(image, 30, 150), cv2.COLOR_GRAY2BGR)
+        # print(images.shape)
+        image = (model.image.data.cpu().numpy() * 255).astype(np.uint8)[0]
+        print(image.shape)
+        # print(images.detach().cpu().numpy()[0].max(), images.detach().cpu().numpy()[0].min())
+        edges = model.entropy.detach().cpu().numpy()[0][0]
+        edges = (edges * 255/edges.max()).astype(np.uint8)
+        print("image.max(), image.min()", image.max(), image.min())
+        print("edges.max(), edges.min()", edges.max(), edges.min())
+        print(edges.shape)
+        print("camera position", model.camera_position.detach().cpu().numpy())
+        # edges = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+
+        print("shapes", image.shape, edges.shape)
         concat = cv2.hconcat([image, edges])
-        cv2.putText(concat, f"loss: {loss.item():.2f}", (6, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(concat, f"loss: {loss.item():.2f}", (6, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2,
+                    cv2.LINE_AA)
         imsave('/tmp/_tmp_%04d.png' % i, concat)
         loop.set_description('Optimizing (loss %.4f)' % loss.data)
         if loss.item() < 70:
