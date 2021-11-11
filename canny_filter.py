@@ -82,7 +82,8 @@ class CannyFilter(nn.Module):
                                          kernel_size=k_gaussian,
                                          padding=k_gaussian // 2,
                                          bias=False)
-        self.gaussian_filter.weight[:] = torch.from_numpy(gaussian_2D)
+        self.gaussian_filter.weight.data = torch.from_numpy(gaussian_2D.astype(np.float32)).reshape(1, 1, 3, 3)
+        self.gaussian_filter.to(device=self.device)
 
         # sobel
 
@@ -92,14 +93,16 @@ class CannyFilter(nn.Module):
                                         kernel_size=k_sobel,
                                         padding=k_sobel // 2,
                                         bias=False)
-        self.sobel_filter_x.weight[:] = torch.from_numpy(sobel_2D)
+        self.sobel_filter_x.weight.data = torch.from_numpy(sobel_2D.astype(np.float32)).reshape(1, 1, 3, 3)
+        self.sobel_filter_x.to(device=self.device)
 
         self.sobel_filter_y = nn.Conv2d(in_channels=1,
                                         out_channels=1,
                                         kernel_size=k_sobel,
                                         padding=k_sobel // 2,
                                         bias=False)
-        self.sobel_filter_y.weight[:] = torch.from_numpy(sobel_2D.T)
+        self.sobel_filter_y.weight.data = torch.from_numpy(sobel_2D.T.astype(np.float32)).reshape(1, 1, 3, 3)
+        self.sobel_filter_y.to(device=self.device)
 
         # thin
 
@@ -111,7 +114,8 @@ class CannyFilter(nn.Module):
                                             kernel_size=thin_kernels[0].shape,
                                             padding=thin_kernels[0].shape[-1] // 2,
                                             bias=False)
-        self.directional_filter.weight[:, 0] = torch.from_numpy(directional_kernels)
+        self.directional_filter.weight.data = torch.from_numpy(directional_kernels.astype(np.float32)).reshape(1, 8, 3, 3)
+        self.directional_filter.to(device=self.device)
 
         # hysteresis
 
@@ -121,7 +125,8 @@ class CannyFilter(nn.Module):
                                     kernel_size=3,
                                     padding=1,
                                     bias=False)
-        self.hysteresis.weight[:] = torch.from_numpy(hysteresis)
+        self.hysteresis.weight.data = torch.from_numpy(hysteresis.astype(np.float32)).reshape(1, 1, 3, 3)
+        self.hysteresis.to(device=self.device)
 
     def forward(self, img, low_threshold=None, high_threshold=None, hysteresis=False):
         # set the setps tensors
@@ -149,46 +154,46 @@ class CannyFilter(nn.Module):
         grad_orientation = torch.round(grad_orientation / 45) * 45  # keep a split by 45
 
         # thin edges
+        #
+        # directional = self.directional_filter(grad_magnitude)
+        # # get indices of positive and negative directions
+        # positive_idx = (grad_orientation / 45) % 8
+        # negative_idx = ((grad_orientation / 45) + 4) % 8
+        # thin_edges = grad_magnitude.clone()
+        # # non maximum suppression direction by direction
+        # for pos_i in range(4):
+        #     neg_i = pos_i + 4
+        #     # get the oriented grad for the angle
+        #     is_oriented_i = (positive_idx == pos_i) * 1
+        #     is_oriented_i = is_oriented_i + (positive_idx == neg_i) * 1
+        #     pos_directional = directional[:, pos_i]
+        #     neg_directional = directional[:, neg_i]
+        #     selected_direction = torch.stack([pos_directional, neg_directional])
+        #
+        #     # get the local maximum pixels for the angle
+        #     is_max = selected_direction.min(dim=0)[0] > 0.0
+        #     is_max = torch.unsqueeze(is_max, dim=1)
+        #
+        #     # apply non maximum suppression
+        #     to_remove = (is_max == 0) * 1 * (is_oriented_i) > 0
+        #     thin_edges[to_remove] = 0.0
+        #
+        # # thresholds
+        #
+        # if low_threshold is not None:
+        #     low = thin_edges > low_threshold
+        #
+        #     if high_threshold is not None:
+        #         high = thin_edges > high_threshold
+        #         # get black/gray/white only
+        #         thin_edges = low * 0.5 + high * 0.5
+        #
+        #         if hysteresis:
+        #             # get weaks and check if they are high or not
+        #             weak = (thin_edges == 0.5) * 1
+        #             weak_is_high = (self.hysteresis(thin_edges) > 1) * weak
+        #             thin_edges = high * 1 + weak_is_high * 1
+        #     else:
+        #         thin_edges = low * 1
 
-        directional = self.directional_filter(grad_magnitude)
-        # get indices of positive and negative directions
-        positive_idx = (grad_orientation / 45) % 8
-        negative_idx = ((grad_orientation / 45) + 4) % 8
-        thin_edges = grad_magnitude.clone()
-        # non maximum suppression direction by direction
-        for pos_i in range(4):
-            neg_i = pos_i + 4
-            # get the oriented grad for the angle
-            is_oriented_i = (positive_idx == pos_i) * 1
-            is_oriented_i = is_oriented_i + (positive_idx == neg_i) * 1
-            pos_directional = directional[:, pos_i]
-            neg_directional = directional[:, neg_i]
-            selected_direction = torch.stack([pos_directional, neg_directional])
-
-            # get the local maximum pixels for the angle
-            is_max = selected_direction.min(dim=0)[0] > 0.0
-            is_max = torch.unsqueeze(is_max, dim=1)
-
-            # apply non maximum suppression
-            to_remove = (is_max == 0) * 1 * (is_oriented_i) > 0
-            thin_edges[to_remove] = 0.0
-
-        # thresholds
-
-        if low_threshold is not None:
-            low = thin_edges > low_threshold
-
-            if high_threshold is not None:
-                high = thin_edges > high_threshold
-                # get black/gray/white only
-                thin_edges = low * 0.5 + high * 0.5
-
-                if hysteresis:
-                    # get weaks and check if they are high or not
-                    weak = (thin_edges == 0.5) * 1
-                    weak_is_high = (self.hysteresis(thin_edges) > 1) * weak
-                    thin_edges = high * 1 + weak_is_high * 1
-            else:
-                thin_edges = low * 1
-
-        return blurred, grad_x, grad_y, grad_magnitude, grad_orientation, thin_edges
+        return blurred, grad_x, grad_y, grad_magnitude, grad_orientation
