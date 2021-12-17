@@ -24,6 +24,10 @@ data_dir = os.path.join(current_dir, 'data')
 class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
         super(Model, self).__init__()
+
+        self.distance_threshold = 6.0
+        self.distance_penalty_weight = 1000.0
+
         # Load mesh vertices and faces
         vertices, faces = load_off(filename_obj)
 
@@ -49,7 +53,12 @@ class Model(nn.Module):
 
     def forward(self):
         image = self.renderer(self.vertices, self.faces, mode='silhouettes')
-        loss = torch.sum((image - self.image_ref[None, :, :]) ** 2)
+
+        distance = torch.norm(self.camera_position)
+        distance_penalty = torch.relu(self.distance_threshold - distance)
+        print("distance and distance_penalty: ", distance, distance_penalty)
+
+        loss = torch.sum((self.image_ref[None, :] - image) ** 2) * (1 + distance_penalty)
         return loss
 
 
@@ -73,8 +82,8 @@ def make_reference_image(filename_ref, filename_obj):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
-    parser.add_argument('-ir', '--filename_ref', type=str, default=os.path.join(data_dir, 'example4_ref.png'))
+    parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'ModelNet10/toilet/train/toilet_0001.off'))
+    parser.add_argument('-ir', '--filename_ref', type=str, default=os.path.join(data_dir, 'gaussian_reference.png'))
     parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'example4_result.mp4'))
     parser.add_argument('-mr', '--make_reference_image', type=int, default=0)
     parser.add_argument('-g', '--gpu', type=int, default=0)
@@ -83,18 +92,24 @@ def main():
     if args.make_reference_image:
         make_reference_image(args.filename_ref, args.filename_obj)
 
+    loop = tqdm.tqdm(range(1000))
+
     model = Model(args.filename_obj, args.filename_ref)
     model.cuda()
 
     # optimizer = chainer.optimizers.Adam(alpha=0.1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
-    loop = tqdm.tqdm(range(1000))
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     for i in loop:
         optimizer.zero_grad()
         loss = model()
         loss.backward()
         optimizer.step()
         images, _, _ = model.renderer(model.vertices, model.faces, torch.tanh(model.textures))
+
+        # print(images.shape)
+
+        # image = (images.detach().cpu().numpy()[0].copy() * 255).astype(np.uint8)
+
         image = (images.detach().cpu().numpy()[0].transpose(1, 2, 0).copy() * 255).astype(np.uint8)
 
         # https://www.programcreek.com/python/example/89325/cv2.Sobel
