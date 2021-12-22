@@ -36,7 +36,9 @@ class Model(nn.Module):
         self.register_buffer('textures', textures)
 
         # load reference image
-        image_ref = torch.from_numpy((imread(filename_ref).max(-1) != 0).astype(np.float32))
+        image_ref = torch.from_numpy((imread(filename_ref).max(-1)).astype(np.float32))
+        # print(image_ref.unique())
+        # # TODO: try it without thresholding, just normalize
         self.register_buffer('image_ref', image_ref)
 
         # camera parameters
@@ -48,8 +50,10 @@ class Model(nn.Module):
         self.renderer = renderer
 
     def forward(self):
-        image = self.renderer(self.vertices, self.faces, mode='silhouettes')
+        image = self.renderer(self.vertices, self.faces, mode='silhouettes') * 255
+        # print(image.unique())
         loss = torch.sum((image - self.image_ref[None, :, :]) ** 2)
+        # TODO: add tanh(distance - distance_threshold) to loss
         return loss
 
 
@@ -62,13 +66,17 @@ def make_gif(filename):
 
 
 def make_reference_image(filename_ref, filename_obj):
-    model = Model(filename_obj)
+    print(f"making reference image {filename_ref}")
+    model = Model(filename_obj, filename_ref)
     model.cuda()
 
-    model.renderer.eye = nr.get_points_from_angles(2.732, 30, -15)
+    model.renderer.eye = nn.Parameter(torch.from_numpy(np.array([6, 10, -14], dtype=np.float32)))
     images, _, _ = model.renderer.render(model.vertices, model.faces, torch.tanh(model.textures))
     image = images.detach().cpu().numpy()[0]
+    print(np.unique(image))
+    image = image.transpose(1, 2, 0)
     imsave(filename_ref, image)
+    print("done making reference image")
 
 
 def main():
@@ -76,7 +84,7 @@ def main():
     parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
     parser.add_argument('-ir', '--filename_ref', type=str, default=os.path.join(data_dir, 'example4_ref.png'))
     parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'example4_result.mp4'))
-    parser.add_argument('-mr', '--make_reference_image', type=int, default=0)
+    parser.add_argument('-mr', '--make_reference_image', type=int, default=1)
     parser.add_argument('-g', '--gpu', type=int, default=0)
     args = parser.parse_args()
 
