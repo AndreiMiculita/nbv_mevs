@@ -111,7 +111,7 @@ def get_best_views(objfile: str, n: int) -> Tuple[list, list]:
         mesh = o3d.io.read_triangle_mesh(objfile)
     elif objfile.endswith('.pcd'):
         # Load the point cloud
-        pcd = o3d.io.read_point_cloud()
+        pcd = o3d.io.read_point_cloud(objfile)
 
         # Visualize the point cloud
         # o3d.visualization.draw_geometries([pcd])
@@ -135,18 +135,17 @@ def get_best_views(objfile: str, n: int) -> Tuple[list, list]:
     best_views = []
     losses = []
 
-    for view_i in range(n):
+    initial_views = fibonacci_sphere(n)
+    print(initial_views)
+    initial_view_radius = 16
+    # multiply every element in the list of lists by the initial_view_radius
+    initial_views = [[initial_view_radius * i for i in inner] for inner in initial_views]
+
+    for idx, initial_view in enumerate(initial_views):
         loop = tqdm.tqdm(range(1000))
 
         # Initialize the model
-        if best_views:  # if we already have some views, use the opposite of the last view
-            initial_camera_position = - best_views[-1].detach().cpu().numpy()
-            # normalize and multiply by 16
-            initial_camera_position /= np.linalg.norm(initial_camera_position)
-            initial_camera_position *= 16
-            model = Model(mesh, "data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_camera_position)
-        else:
-            model = Model(mesh, "data/gaussian_reference.png", tqdm_loop=loop)
+        model = Model(mesh, "data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_view)
 
         model.cuda()
 
@@ -180,7 +179,7 @@ def get_best_views(objfile: str, n: int) -> Tuple[list, list]:
 
             if loss.item() < 70:
                 break
-        make_gif(f'standardized_interface_output{view_i}.mp4')
+        make_gif(f'standardized_interface_output{idx}.mp4')
         best_views.append(model.renderer.eye)
         losses.append(loss.item())
 
@@ -197,7 +196,7 @@ def make_gif(filename):
 
 if __name__ == "__main__":
     # Get the best views
-    views, losses = get_best_views(objfile="/home/andrei/datasets/teapot.obj", n=3)
+    views, losses = get_best_views(objfile="/home/andrei/datasets/washington_short_version/Category/banana_Category/banana_object_10.pcd", n=3)
     print(views, losses)
     print("The best views (with respective losses) are:")
     for view, loss in zip(views, losses):
