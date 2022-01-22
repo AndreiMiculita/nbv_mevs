@@ -105,28 +105,7 @@ class Model(nn.Module):
         return loss
 
 
-def get_best_views(objfile: str, n: int) -> Tuple[list, list]:
-
-    if objfile.endswith('.obj') or objfile.endswith('.off'):
-        mesh = o3d.io.read_triangle_mesh(objfile)
-    elif objfile.endswith('.pcd'):
-        # Load the point cloud
-        pcd = o3d.io.read_point_cloud(objfile)
-
-        # Visualize the point cloud
-        # o3d.visualization.draw_geometries([pcd])
-
-        # Remove the table plane using RANSAC
-        # TODO
-
-        pcd.estimate_normals()
-        pcd.orient_normals_consistent_tangent_plane(k=10)
-
-        # We need a mesh, so we do Poisson surface reconstruction
-        with o3d.utility.VerbosityContextManager(
-                o3d.utility.VerbosityLevel.Info) as cm:
-            mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd=pcd, depth=4)
-        print(mesh)
+def get_best_views(mesh, n: int) -> Tuple[list, list]:
 
     # Visualize the mesh
     # o3d.visualization.draw_geometries([mesh])
@@ -136,10 +115,10 @@ def get_best_views(objfile: str, n: int) -> Tuple[list, list]:
     losses = []
 
     initial_views = fibonacci_sphere(n)
-    print(initial_views)
     initial_view_radius = 16
     # multiply every element in the list of lists by the initial_view_radius
     initial_views = [[initial_view_radius * i for i in inner] for inner in initial_views]
+    print(f"Initial views: {initial_views}")
 
     for idx, initial_view in enumerate(initial_views):
         loop = tqdm.tqdm(range(1000))
@@ -194,9 +173,38 @@ def make_gif(filename):
     writer.close()
 
 
+def get_best_views_from_pcd(pcd, n: int) -> Tuple[list, list]:
+    # We need a mesh, so we do Poisson surface reconstruction
+    with o3d.utility.VerbosityContextManager(
+            o3d.utility.VerbosityLevel.Info) as cm:
+        mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd=pcd, depth=4)
+    print(mesh)
+    return get_best_views(mesh, n)
+
+
+def get_best_views_from_file(objfile: str, n: int) -> Tuple[list, list]:
+    if objfile.endswith('.obj') or objfile.endswith('.off'):
+        mesh = o3d.io.read_triangle_mesh(objfile)
+        return get_best_views(mesh, n)
+    elif objfile.endswith('.pcd'):
+        # Load the point cloud
+        pcd = o3d.io.read_point_cloud(objfile)
+
+        # Visualize the point cloud
+        # o3d.visualization.draw_geometries([pcd])
+
+        # Remove the table plane using RANSAC
+        # TODO
+
+        pcd.estimate_normals()
+        pcd.orient_normals_consistent_tangent_plane(k=10)
+
+        return get_best_views_from_pcd(pcd, n)
+
+
 if __name__ == "__main__":
     # Get the best views
-    views, losses = get_best_views(objfile="/home/andrei/datasets/washington_short_version/Category/banana_Category/banana_object_10.pcd", n=3)
+    views, losses = get_best_views_from_file(objfile="/home/andrei/datasets/washington_short_version/Category/banana_Category/banana_object_107.pcd", n=3)
     print(views, losses)
     print("The best views (with respective losses) are:")
     for view, loss in zip(views, losses):
