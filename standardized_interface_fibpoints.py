@@ -105,13 +105,14 @@ class Model(nn.Module):
         return loss
 
 
-def get_best_views(mesh, n: int) -> Tuple[list, list]:
+def get_best_views(mesh, n: int) -> Tuple[list, list, list]:
 
     # Visualize the mesh
     # o3d.visualization.draw_geometries([mesh])
 
     # For this mesh, we need to find the best n views
-    best_views = []
+    best_view_coords = []
+    best_view_images = []
     losses = []
 
     initial_views = fibonacci_sphere(n)
@@ -158,11 +159,13 @@ def get_best_views(mesh, n: int) -> Tuple[list, list]:
 
             if loss.item() < 70:
                 break
+
         make_gif(f'standardized_interface_output{idx}.mp4')
-        best_views.append(model.renderer.eye)
+        best_view_coords.append(model.renderer.eye)
+        best_view_images.append(image)
         losses.append(loss.item())
 
-    return best_views, losses
+    return best_view_coords, best_view_images, losses
 
 
 def make_gif(filename):
@@ -173,7 +176,7 @@ def make_gif(filename):
     writer.close()
 
 
-def get_best_views_from_pcd(pcd, n: int) -> Tuple[list, list]:
+def get_best_views_from_pcd(pcd, n: int) -> Tuple[list, list, list]:
     # We need a mesh, so we do Poisson surface reconstruction
     with o3d.utility.VerbosityContextManager(
             o3d.utility.VerbosityLevel.Info) as cm:
@@ -182,7 +185,7 @@ def get_best_views_from_pcd(pcd, n: int) -> Tuple[list, list]:
     return get_best_views(mesh, n)
 
 
-def get_best_views_from_file(objfile: str, n: int) -> Tuple[list, list]:
+def get_best_views_from_file(objfile: str, n: int) -> Tuple[list, list, list]:
     if objfile.endswith('.obj') or objfile.endswith('.off'):
         mesh = o3d.io.read_triangle_mesh(objfile)
         return get_best_views(mesh, n)
@@ -204,11 +207,13 @@ def get_best_views_from_file(objfile: str, n: int) -> Tuple[list, list]:
 
 if __name__ == "__main__":
     # Get the best views
-    views, losses = get_best_views_from_file(objfile="/home/andrei/datasets/washington_short_version/Category/banana_Category/banana_object_107.pcd", n=3)
-    print(views, losses)
+    views, view_imgs, losses = get_best_views_from_file(objfile="/home/andrei/datasets/teapot.obj", n=3)
+
     print("The best views (with respective losses) are:")
     for view, loss in zip(views, losses):
         print(f"\t{view.detach().cpu().numpy()} with loss {loss}")
+    for idx, view_img in enumerate(view_imgs):
+        cv2.imwrite(f"view_{idx}.png", view_img)
 
     # print best views to file
     with open("best_views.txt", "w") as f:
@@ -243,7 +248,9 @@ if __name__ == "__main__":
 
         for i in set(clusters):
             print(f"Cluster {i}")
-            print(f"\t{[views[j] for j in range(len(views)) if clusters[j] == i]}")
+            for j in range(len(views)):
+                if clusters[j] == i:
+                    print(f"\t{str(views[j].detach().cpu().numpy())}")
             views_in_cluster = [views[j] for j in range(len(views)) if clusters[j] == i]
             losses_in_cluster = [losses[j] for j in range(len(views)) if clusters[j] == i]
 
