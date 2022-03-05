@@ -92,7 +92,7 @@ class Model(nn.Module):
         loss = torch.sum((self.image_ref[None, :] - image) ** 2) * (1 + distance_penalty)
 
         if self.tqdm_loop is not None:
-            self.tqdm_loop.set_description(f'Distance, distance penalty and loss: {distance:.2f}, {distance_penalty:.2f}, {loss:.2f}')
+            self.tqdm_loop.set_description(f'Distance: {distance:.2f}, distance penalty: {distance_penalty:.2f}, loss: {loss:.2f}')
 
         return loss
 
@@ -103,6 +103,7 @@ def get_best_views(pcd: o3d.geometry.PointCloud, n: int) -> list:
     # TODO
 
     pcd.estimate_normals()
+    pcd.orient_normals_consistent_tangent_plane(k=10)
 
     # We need a mesh, so we do Poisson surface reconstruction
     with o3d.utility.VerbosityContextManager(
