@@ -9,17 +9,20 @@ spaced vertically on a sphere around the object.
 """
 
 import argparse
+import math
+
 from open3d import *
 import open3d as o3d
 import numpy as np
 import cv2
 from utility import normalize3d
+from sympy import pi, sin, cos, sqrt, acos, atan2
 from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.")
 parser.add_argument("--set", help="Subdirectory: 'train' or 'test'.", default='train')
-parser.add_argument("--out", help="Select a desired output directory.", default="./view-dataset")
+parser.add_argument("--out", help="Select a desired output directory.", default="./view-dataset3")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
                                                      "splits so each viewpoint is at an angle of multiple of 360/x. "
@@ -65,6 +68,50 @@ if os.path.exists(os.path.join(BASE_DIR, OUT_DIR)):
 else:
     os.makedirs(os.path.join(OUT_DIR, "image"))
     os.makedirs(os.path.join(OUT_DIR, "depth"))
+    os.makedirs(os.path.join(OUT_DIR, "pcd"))
+
+# credit: https://stackoverflow.com/a/26127012/13200217
+def fibonacci_sphere(samples=1000):
+    points = []
+    phi = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
+
+    for i in range(samples):
+        y = 1 - (i / float(samples - 1)) * 2  # y goes from 1 to -1
+        radius = math.sqrt(1 - y * y)  # radius at y
+
+        theta = phi * i  # golden angle increment
+
+        x = math.cos(theta) * radius
+        z = math.sin(theta) * radius
+
+        # Reorder so first points are on the sides
+        (x, y, z) = (y, x, z)
+
+        points.append((x, y, z))
+
+    return points
+
+
+# credit https://stackoverflow.com/a/43893134/13200217
+def as_cartesian(rthetaphi):
+    #takes list rthetaphi (single coord)
+    r       = rthetaphi[0]
+    theta   = rthetaphi[1]* pi/180 # to radian
+    phi     = rthetaphi[2]* pi/180
+    x = r * sin( theta ) * cos( phi )
+    y = r * sin( theta ) * sin( phi )
+    z = r * cos( theta )
+    return [x,y,z]
+
+def as_spherical(xyz):
+    #takes list xyz (single coord)
+    x       = xyz[0]
+    y       = xyz[1]
+    z       = xyz[2]
+    r       =  np.float(sqrt(x*x + y*y + z*z))
+    theta   =  np.float(acos(z/r)*180/ pi) #to degrees
+    phi     =  np.float(atan2(y,x)*180/ pi)
+    return [r,theta,phi]
 
 
 def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
@@ -153,11 +200,13 @@ for label in labels:
         mesh.vertices = normalize3d(mesh.vertices)
         mesh.compute_vertex_normals()
 
+        initial_views = fibonacci_sphere(10)
+
         rotations = []
-        for j in range(0, N_VIEWS_H):
-            for i in range(N_VIEWS_W):
-                # Excluding 'rings' on 0 and 180 degrees since it would be the same projection but rotated
-                rotations.append((-(j + 1) * np.pi / (N_VIEWS_H + 1), 0, i * 2 * np.pi / N_VIEWS_W))
+
+        for initial_view in initial_views:
+            rotations.append(as_spherical(initial_view))
+
         last_rotation = (0, 0, 0)
         for rot in rotations:
             nonblocking_custom_capture(mesh, rot, last_rotation)
