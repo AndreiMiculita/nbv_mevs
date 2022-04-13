@@ -143,34 +143,42 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
     vis.update_geometry(tr_mesh)
     vis.poll_events()
     vis.update_renderer()
-    vis.capture_screen_image("{}/image/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-                                                                               ViewData.obj_label,
-                                                                               ViewData.obj_index,
-                                                                               int(ViewData.theta),
-                                                                               int(ViewData.phi),
-                                                                               ViewData.view_index))
-    vis.capture_depth_image("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-                                                                              ViewData.obj_label,
-                                                                              ViewData.obj_index,
-                                                                              int(ViewData.theta),
-                                                                              int(ViewData.phi),
-                                                                              ViewData.view_index),
-                                                                              depth_scale=10000)
+    # vis.capture_screen_image("{}/image/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+    #                                                                            ViewData.obj_label,
+    #                                                                            ViewData.obj_index,
+    #                                                                            int(ViewData.theta),
+    #                                                                            int(ViewData.phi),
+    #                                                                            ViewData.view_index))
+    # vis.capture_depth_image("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+    #                                                                           ViewData.obj_label,
+    #                                                                           ViewData.obj_index,
+    #                                                                           int(ViewData.theta),
+    #                                                                           int(ViewData.phi),
+    #                                                                           ViewData.view_index),
+    #                                                                           depth_scale=10000)
+
+    vis.capture_depth_point_cloud("{}/pcd/{}_{}_theta_{}_phi_{}_vc_{}.pcd".format(OUT_DIR,
+                                                                                   ViewData.obj_label,
+                                                                                   ViewData.obj_index,
+                                                                                   int(ViewData.theta),
+                                                                                   int(ViewData.phi),
+                                                                                   ViewData.view_index))
+
     vis.destroy_window()
-    depth = cv2.imread("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-                                                                         ViewData.obj_label,
-                                                                         ViewData.obj_index,
-                                                                         int(ViewData.theta),
-                                                                         int(ViewData.phi),
-                                                                         ViewData.view_index))
-    result = cv2.normalize(depth, depth, 0, 255, norm_type=cv2.NORM_MINMAX)
-    cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-                                                                  ViewData.obj_label,
-                                                                  ViewData.obj_index,
-                                                                  int(ViewData.theta),
-                                                                  int(ViewData.phi),
-                                                                  ViewData.view_index),
-                                                                  result)
+    # depth = cv2.imread("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+    #                                                                      ViewData.obj_label,
+    #                                                                      ViewData.obj_index,
+    #                                                                      int(ViewData.theta),
+    #                                                                      int(ViewData.phi),
+    #                                                                      ViewData.view_index))
+    # result = cv2.normalize(depth, depth, 0, 255, norm_type=cv2.NORM_MINMAX)
+    # cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+    #                                                               ViewData.obj_label,
+    #                                                               ViewData.obj_index,
+    #                                                               int(ViewData.theta),
+    #                                                               int(ViewData.phi),
+    #                                                               ViewData.view_index),
+    #                                                               result)
 
 
 labels = []
