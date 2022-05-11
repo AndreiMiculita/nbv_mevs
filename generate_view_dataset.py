@@ -70,6 +70,7 @@ else:
     os.makedirs(os.path.join(OUT_DIR, "depth"))
     os.makedirs(os.path.join(OUT_DIR, "pcd"))
 
+
 # credit: https://stackoverflow.com/a/26127012/13200217
 def fibonacci_sphere(samples=1000):
     points = []
@@ -94,24 +95,30 @@ def fibonacci_sphere(samples=1000):
 
 # credit https://stackoverflow.com/a/43893134/13200217
 def as_cartesian(rthetaphi):
-    #takes list rthetaphi (single coord)
-    r       = rthetaphi[0]
-    theta   = rthetaphi[1]* pi/180 # to radian
-    phi     = rthetaphi[2]* pi/180
-    x = r * sin( theta ) * cos( phi )
-    y = r * sin( theta ) * sin( phi )
-    z = r * cos( theta )
-    return [x,y,z]
+    # takes list rthetaphi (single coord)
+    r = rthetaphi[0]
+    theta = rthetaphi[1] * pi / 180  # to radian
+    phi = rthetaphi[2] * pi / 180
+    x = r * sin(theta) * cos(phi)
+    y = r * sin(theta) * sin(phi)
+    z = r * cos(theta)
+    return [x, y, z]
+
 
 def as_spherical(xyz):
-    #takes list xyz (single coord)
-    x       = xyz[0]
-    y       = xyz[1]
-    z       = xyz[2]
-    r       =  np.float(sqrt(x*x + y*y + z*z))
-    theta   =  np.float(acos(z/r)*180/ pi) #to degrees
-    phi     =  np.float(atan2(y,x)*180/ pi)
-    return [r,theta,phi]
+    """
+    Converts cartesian coordinates to spherical coordinates. Returns them in radians.
+    :param xyz: cartesian coordinates
+    :return: spherical coordinates
+    """
+    # takes list xyz (single coord)
+    x = xyz[0]
+    y = xyz[1]
+    z = xyz[2]
+    r = np.float(sqrt(x * x + y * y + z * z))
+    theta = np.float(acos(z / r))  # to degrees
+    phi = np.float(atan2(y, x))
+    return [r, theta, phi]
 
 
 def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
@@ -143,19 +150,6 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
     vis.update_geometry(tr_mesh)
     vis.poll_events()
     vis.update_renderer()
-    # vis.capture_screen_image("{}/image/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-    #                                                                            ViewData.obj_label,
-    #                                                                            ViewData.obj_index,
-    #                                                                            int(ViewData.theta),
-    #                                                                            int(ViewData.phi),
-    #                                                                            ViewData.view_index))
-    # vis.capture_depth_image("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-    #                                                                           ViewData.obj_label,
-    #                                                                           ViewData.obj_index,
-    #                                                                           int(ViewData.theta),
-    #                                                                           int(ViewData.phi),
-    #                                                                           ViewData.view_index),
-    #                                                                           depth_scale=10000)
 
     vis.capture_depth_point_cloud("{}/pcd/{}_{}_theta_{}_phi_{}_vc_{}.pcd".format(OUT_DIR,
                                                                                    ViewData.obj_label,
@@ -165,20 +159,6 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
                                                                                    ViewData.view_index))
 
     vis.destroy_window()
-    # depth = cv2.imread("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-    #                                                                      ViewData.obj_label,
-    #                                                                      ViewData.obj_index,
-    #                                                                      int(ViewData.theta),
-    #                                                                      int(ViewData.phi),
-    #                                                                      ViewData.view_index))
-    # result = cv2.normalize(depth, depth, 0, 255, norm_type=cv2.NORM_MINMAX)
-    # cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
-    #                                                               ViewData.obj_label,
-    #                                                               ViewData.obj_index,
-    #                                                               int(ViewData.theta),
-    #                                                               int(ViewData.phi),
-    #                                                               ViewData.view_index),
-    #                                                               result)
 
 
 labels = []
@@ -213,7 +193,34 @@ for label in labels:
         rotations = []
 
         for initial_view in initial_views:
+            [r, theta, phi] = as_spherical(initial_view)
             rotations.append(as_spherical(initial_view))
+
+        # Convert to np array
+        rotations = np.array(rotations)
+
+        # Decrease theta by pi to get the same rotations as the original
+        rotations[:, 1] = rotations[:, 1] - np.pi
+
+        # Increase phi by pi to get the same rotations as the original
+        rotations[:, 2] = rotations[:, 2] + np.pi
+
+        # Decrease r to 0 to get the same rotations as the original
+        rotations[:, 0] = 0
+
+        # Swap theta and r to get the same rotations as the original
+        rotations[:, 0], rotations[:, 1] = rotations[:, 1], rotations[:, 0].copy()
+
+        # Print min and max of each column
+        # print(f"[DEBUG] Min and max of each column:")
+        # print(f"[DEBUG] theta: {np.min(rotations[:, 0]):.2f} - {np.max(rotations[:, 0]):.2f}")
+        # print(f"[DEBUG] r: {np.min(rotations[:, 1]):.2f} - {np.max(rotations[:, 1]):.2f}")
+        # print(f"[DEBUG] phi: {np.min(rotations[:, 2]):.2f} - {np.max(rotations[:, 2]):.2f}")
+        #
+        # print(f"[INFO] Rotations: {rotations}")
+
+        # Exit
+        exit()
 
         last_rotation = (0, 0, 0)
         for rot in rotations:
