@@ -151,7 +151,9 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
     vis.poll_events()
     vis.update_renderer()
 
-    vis.capture_depth_point_cloud("{}/pcd/{}_{}_theta_{}_phi_{}_vc_{}.pcd".format(OUT_DIR,
+    # Capture depth image
+    vis.capture_depth_point_cloud("{}/{}/{}_{}_theta_{}_phi_{}_vc_{}.pcd".format(OUT_DIR,
+                                                                                   ViewData.obj_label,
                                                                                    ViewData.obj_label,
                                                                                    ViewData.obj_index,
                                                                                    int(ViewData.theta),
@@ -167,6 +169,11 @@ for cur in os.listdir(DATA_PATH):
         labels.append(cur)
 
 for label in labels:
+
+    # Create output directory for label
+    if not os.path.exists(os.path.join(OUT_DIR, label)):
+        os.makedirs(os.path.join(OUT_DIR, label))
+
     files = os.listdir(os.path.join(DATA_PATH, label, args.set))
     files.sort()
     for filename in files:  # Removes file without .off extension
@@ -218,9 +225,6 @@ for label in labels:
         # print(f"[DEBUG] phi: {np.min(rotations[:, 2]):.2f} - {np.max(rotations[:, 2]):.2f}")
         #
         # print(f"[INFO] Rotations: {rotations}")
-
-        # Exit
-        exit()
 
         last_rotation = (0, 0, 0)
         for rot in rotations:
