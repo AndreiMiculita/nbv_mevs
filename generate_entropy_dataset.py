@@ -28,7 +28,7 @@ import math
 
 parser = argparse.ArgumentParser(description="Generates a dataset in CSV format of depth-views entropy values.")
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.", required=True)
-parser.add_argument("--out", help="Select a desired output directory.", default="./entropy-dataset")
+parser.add_argument("--out", help="Select a desired output directory.", default="./entropy-dataset3")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
                                                      "splits so each viewpoint is at an angle of multiple of 360/x. "
@@ -84,28 +84,33 @@ def fibonacci_sphere(samples=1000):
 
 # credit https://stackoverflow.com/a/43893134/13200217
 def as_cartesian(rthetaphi):
-    #takes list rthetaphi (single coord)
-    r       = rthetaphi[0]
-    theta   = rthetaphi[1]* pi/180 # to radian
-    phi     = rthetaphi[2]* pi/180
-    x = r * sin( theta ) * cos( phi )
-    y = r * sin( theta ) * sin( phi )
-    z = r * cos( theta )
-    return [x,y,z]
+    # takes list rthetaphi (single coord)
+    r = rthetaphi[0]
+    theta = rthetaphi[1] * pi / 180  # to radian
+    phi = rthetaphi[2] * pi / 180
+    x = r * sin(theta) * cos(phi)
+    y = r * sin(theta) * sin(phi)
+    z = r * cos(theta)
+    return [x, y, z]
+
 
 def as_spherical(xyz):
-    #takes list xyz (single coord)
-    x       = xyz[0]
-    y       = xyz[1]
-    z       = xyz[2]
-    r       =  np.float(sqrt(x*x + y*y + z*z))
-    theta   =  np.float(acos(z/r)*180/ pi) #to degrees
-    phi     =  np.float(atan2(y,x)*180/ pi)
-    return [r,theta,phi]
+    """
+    Converts cartesian coordinates to spherical coordinates. Returns them in radians.
+    :param xyz: cartesian coordinates
+    :return: spherical coordinates
+    """
+    # takes list xyz (single coord)
+    x = xyz[0]
+    y = xyz[1]
+    z = xyz[2]
+    r = np.float(sqrt(x * x + y * y + z * z))
+    theta = np.float(acos(z / r))  # to degrees
+    phi = np.float(atan2(y, x))
+    return [r, theta, phi]
 
 
-
-def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot=(0, 0, 0)):
+def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
     """
     Custom function for Open3D to allow non-blocking capturing on a headless server.
 
@@ -173,12 +178,36 @@ for split_set in ['train', 'test']:
             if args.debug:
                 print(f"[DEBUG] Current Object: {file}")
 
-            initial_views = fibonacci_sphere(10)
+            initial_views = fibonacci_sphere(40)
 
             rotations = []
 
             for initial_view in initial_views:
+                [r, theta, phi] = as_spherical(initial_view)
                 rotations.append(as_spherical(initial_view))
+
+            # Convert to np array
+            rotations = np.array(rotations)
+
+            # Decrease theta by pi to get the same rotations as the original
+            rotations[:, 1] = rotations[:, 1] - np.pi
+
+            # Increase phi by pi to get the same rotations as the original
+            rotations[:, 2] = rotations[:, 2] + np.pi
+
+            # Decrease r to 0 to get the same rotations as the original
+            rotations[:, 0] = 0
+
+            # Swap theta and r to get the same rotations as the original
+            rotations[:, 0], rotations[:, 1] = rotations[:, 1], rotations[:, 0].copy()
+
+            # Print min and max of each column
+            # print(f"[DEBUG] Min and max of each column:")
+            # print(f"[DEBUG] theta: {np.min(rotations[:, 0]):.2f} - {np.max(rotations[:, 0]):.2f}")
+            # print(f"[DEBUG] r: {np.min(rotations[:, 1]):.2f} - {np.max(rotations[:, 1]):.2f}")
+            # print(f"[DEBUG] phi: {np.min(rotations[:, 2]):.2f} - {np.max(rotations[:, 2]):.2f}")
+            #
+            # print(f"[INFO] Rotations: {rotations}")
 
             last_rotation = (0, 0, 0)
             for rot in rotations:
