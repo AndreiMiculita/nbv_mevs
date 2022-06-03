@@ -6,10 +6,10 @@ import numpy as np
 import tqdm
 
 import neural_renderer as nr
-from find_highest_entropy import edge_detection_loss
+from old_scripts.find_highest_entropy import edge_detection_loss
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.join(current_dir, 'data')
+data_dir = os.path.join(current_dir, '../data')
 
 
 def main():

@@ -32,4 +32,4 @@ if __name__ == '__main__':
     plt.show()
 
     # save the array as a grayscale image
-    Image.fromarray(img * 255).convert('L').save('data/gaussian_reference.png')
+    Image.fromarray(img * 255).convert('L').save('../data/gaussian_reference.png')

@@ -13,13 +13,13 @@ import torch.nn as nn
 import tqdm
 from skimage.io import imread, imsave
 
-import canny_filter
+from old_scripts import canny_filter
 import neural_renderer as nr
 
 from load_off import load_off
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.join(current_dir, 'data')
+data_dir = os.path.join(current_dir, '../data')
 
 # TODO: https://discuss.pytorch.org/t/calculating-the-entropy-loss/14510/3
 # see also

@@ -11,10 +11,11 @@ import tqdm
 import imageio
 
 import neural_renderer as nr
+from platonic_solid_points import make_tetrahedron_vertices
 from plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = os.path.join(current_dir, 'neural_renderer/examples/data')
+data_dir = os.path.join(current_dir, '../neural_renderer/examples/data')
 
 
 def main():
@@ -25,8 +26,7 @@ def main():
     args = parser.parse_args()
 
     # other settings
-    camera_distance = 2.732
-    elevation = 30
+    eyes = make_tetrahedron_vertices(circumradius=2.732)
     texture_size = 2
 
     # load .obj
@@ -46,13 +46,9 @@ def main():
     loop = tqdm.tqdm(range(0, 360, 4))
     writer = imageio.get_writer(args.filename_output, mode='I')
     coords = []
-    for num, azimuth in enumerate(loop):
+    for eye in eyes:
         loop.set_description('Drawing')
-        eye = nr.get_points_from_angles(camera_distance, elevation, azimuth)
-        eye = (eye[0], eye[1], 2.0*eye[2])
-        renderer.eye = eye
-
-        print(f"\nangle: {renderer.eye}\n")
+        renderer.eye = tuple(eye)
         coords.append(renderer.eye)
         images, _, _ = renderer(vertices, faces, textures)  # [batch_size, RGB, image_size, image_size]
         image = images.detach().cpu().numpy()[0].transpose((1, 2, 0))  # [image_size, image_size, RGB]
