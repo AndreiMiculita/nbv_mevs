@@ -106,7 +106,7 @@ for name, group in df_grouped:
     print(group)
 
     # Create a Voronoi diagram from the group
-    vor = Voronoi(group[['rot_x', 'rot_y']])
+    vor = Voronoi(group[['rot_y', 'rot_x']])
 
     # Plot the Voronoi diagram
     regions, vertices = voronoi_finite_polygons_2d(vor)
@@ -115,13 +115,23 @@ for name, group in df_grouped:
 
     normalize = colors.Normalize(vmin=0, vmax=6)
 
+    # Plot the centroids
+    plt.scatter(group['rot_y'], group['rot_x'], c=cmap(normalize(group['entropy'])))
+
+    # Add axis labels
+    plt.xlabel('rot_y')
+    plt.ylabel('rot_x')
+
+    plt.show()
+
     # Color regions by entropy, using colormap "jet" mapped to entropy, and transparent edges
     for idx, region in enumerate(regions):
         polygon = vertices[region]
         plt.fill(*zip(*polygon), color=cmap(normalize(group['entropy'].iloc[idx])), edgecolor='none')
 
-    plt.scatter(group['rot_x'], group['rot_y'], c=group['entropy'], cmap='jet')
-    plt.xlim(0, 180)
-    plt.ylim(0, 360)
+    plt.plot(group['rot_y'], group['rot_x'], 'ko')
+
+    plt.xlim(0, 360)
+    plt.ylim(0, 180)
 
     plt.show()
