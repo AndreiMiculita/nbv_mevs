@@ -3,6 +3,7 @@ from sympy import pi, sin, cos, sqrt, acos, atan2
 import numpy as np
 import matplotlib.pyplot as plt
 from plotting_utils import set_axes_equal, show_3d_axes_rgb
+from sklearn_som.som import SOM
 
 # credit: https://stackoverflow.com/a/26127012/13200217
 def fibonacci_sphere(samples=1000):
@@ -39,19 +40,24 @@ def as_cartesian(rthetaphi):
 
 
 def as_spherical(xyz):
+    """
+    Converts cartesian coordinates to spherical coordinates. Returns them in radians.
+    :param xyz: cartesian coordinates
+    :return: spherical coordinates
+    """
     # takes list xyz (single coord)
     x = xyz[0]
     y = xyz[1]
     z = xyz[2]
     r = np.float(sqrt(x * x + y * y + z * z))
-    theta = np.float(acos(z / r) * 180 / pi)  # to degrees
-    phi = np.float(atan2(y, x) * 180 / pi)
+    theta = np.float(acos(z / r))  # to degrees
+    phi = np.float(atan2(y, x))
     return [r, theta, phi]
 
 
 if __name__ == "__main__":
     # generate a sphere
-    points = fibonacci_sphere(samples=400)
+    points = fibonacci_sphere(samples=40)
 
     # convert to numpy array
     points = np.array(points)
@@ -67,14 +73,46 @@ if __name__ == "__main__":
     plt.show()
 
     # convert to spherical coordinates as np array
-    spherical = np.array(list(map(as_spherical, points)))
+
+    spherical = []
+
+    for initial_view in points:
+        [r, theta, phi] = as_spherical(initial_view)
+        spherical.append(as_spherical(initial_view))
+
+    # Convert to np array
+    spherical = np.array(spherical)
+
+    # Decrease theta by pi to get the same rotations as the original
+    spherical[:, 1] = spherical[:, 1] - np.pi
+
+    # Increase phi by pi to get the same rotations as the original
+    spherical[:, 2] = spherical[:, 2] + np.pi
+
+    # Decrease r to 0 to get the same rotations as the original
+    spherical[:, 0] = 0
+
+    # Swap theta and r to get the same rotations as the original
+    spherical[:, 0], spherical[:, 1] = spherical[:, 1], spherical[:, 0].copy()
 
     print(spherical)
 
+    # convert radians to degrees
+    spherical[:, 0] = -spherical[:, 0] * 180 / pi
+    spherical[:, 2] = spherical[:, 2] * 180 / pi
+
     # view the spherical coords on a 2d scatter plot
     ax = plt.axes()
-    ax.scatter(spherical[:, 2], spherical[:, 1])
+    ax.scatter(spherical[:, 2], spherical[:, 0])
     ax.set_ylabel("theta")
     ax.set_xlabel("phi")
     plt.show()
+
+    # # Fit SOM
+    # som = SOM(m=7, n=7, dim=2)
+    # # Fit just columns 2 and 1
+    # som.fit(spherical[:, [2, 1]])
+    #
+    # # view the SOM
+    # ax = plt.axes()
 
