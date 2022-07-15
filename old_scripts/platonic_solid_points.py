@@ -93,15 +93,20 @@ def make_icosahedron_vertices(circumradius=np.sqrt(phi+2)) -> np.array:
 
 
 def main():
-    vertices = make_tetrahedron_vertices()
-    print(vertices)
+    # make a 3d plot of each function's output and save them in separate images
+    for func in [make_tetrahedron_vertices, make_cube_vertices, make_octahedron_vertices,
+                    make_dodecahedron_vertices, make_icosahedron_vertices]:
+            vertices = func()
+            print(vertices)
+            ax = plt.axes(projection='3d')
+            ax.scatter3D(*vertices.transpose(), s=100, c='b')
+            ax.set_box_aspect([1, 1, 1])
+            set_axes_equal(ax)
+            show_3d_axes_rgb(ax)
+            # plt.show()
+            plt.savefig(func.__name__.replace("make_", "") + '.pdf', bbox_inches='tight')
 
-    ax = plt.axes(projection='3d')
-    ax.scatter3D(*vertices.transpose())
-    ax.set_box_aspect([1, 1, 1])
-    set_axes_equal(ax)
-    show_3d_axes_rgb(ax)
-    plt.show()
+
 
 
 if __name__ == '__main__':
