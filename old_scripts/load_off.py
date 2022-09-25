@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import open3d as o3d
-from open3d.cpu.pybind.geometry import TriangleMesh
+from open3d.cuda.pybind.geometry import TriangleMesh
 
 
 def load_off(filename_off, normalization=True):
