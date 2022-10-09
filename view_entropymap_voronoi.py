@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi, voronoi_plot_2d
-from  matplotlib import colors
+from matplotlib import colors
 
 
 # Source: https://stackoverflow.com/a/20678647/13200217
@@ -67,7 +67,7 @@ def voronoi_finite_polygons_2d(vor, radius=None):
 
             # Compute the missing endpoint of an infinite ridge
 
-            t = vor.points[p2] - vor.points[p1] # tangent
+            t = vor.points[p2] - vor.points[p1]  # tangent
             t /= np.linalg.norm(t)
             n = np.array([-t[1], t[0]])  # normal
 
@@ -81,15 +81,13 @@ def voronoi_finite_polygons_2d(vor, radius=None):
         # sort region counterclockwise
         vs = np.asarray([new_vertices[v] for v in new_region])
         c = vs.mean(axis=0)
-        angles = np.arctan2(vs[:,1] - c[1], vs[:,0] - c[0])
+        angles = np.arctan2(vs[:, 1] - c[1], vs[:, 0] - c[0])
         new_region = np.array(new_region)[np.argsort(angles)]
 
         # finish
         new_regions.append(new_region.tolist())
 
     return new_regions, np.asarray(new_vertices)
-
-
 
 
 # Read all columns from csv
@@ -105,33 +103,116 @@ for name, group in df_grouped:
     print(name)
     print(group)
 
+    grid = np.zeros((7, 7))
+
+    voronoi_to_grid_map = {
+        (43, 148): (0, 0),
+        (119, 177): (0, 1),
+        (117, 142): (0, 2),
+        (165, 134): (0, 3),
+        (212, 149): (0, 4),
+        (257, 129): (0, 5),
+        (296, 148): (0, 6),
+        (27, 116): (1, 0),
+        (81, 125): (1, 1),
+        (43, 157): (1, 2),
+        (43, 158): (1, 3),
+        (43, 159): (1, 4),
+        (43, 160): (1, 5),
+        (43, 161): (1, 6),
+        (43, 162): (2, 0),
+        (43, 163): (2, 1),
+        (43, 164): (2, 2),
+        (43, 165): (2, 3),
+        (43, 166): (2, 4),
+        (43, 167): (2, 5),
+        (43, 168): (2, 6),
+        (43, 169): (3, 0),
+        (43, 170): (3, 1),
+        (43, 171): (3, 2),
+        (43, 172): (3, 3),
+        (43, 173): (3, 4),
+        (43, 174): (3, 5),
+        (43, 175): (3, 6),
+        (43, 176): (4, 0),
+        (43, 177): (4, 1),
+        (43, 178): (4, 2),
+        (43, 179): (4, 3),
+        (43, 180): (4, 4),
+        (43, 181): (4, 5),
+        (43, 182): (4, 6),
+        (43, 183): (5, 0),
+        (43, 184): (5, 1),
+        (43, 185): (5, 2),
+        (43, 186): (5, 3),
+        (43, 187): (5, 4),
+        (43, 188): (5, 5),
+        (43, 189): (5, 6),
+        (43, 190): (6, 0),
+        (43, 191): (6, 1),
+        (43, 192): (6, 2),
+        (43, 193): (6, 3),
+        (43, 194): (6, 4),
+        (43, 195): (6, 5),
+        (43, 196): (6, 6)
+    }
+
     # Create a Voronoi diagram from the group
     vor = Voronoi(group[['rot_y', 'rot_x']])
 
     # Plot the Voronoi diagram
     regions, vertices = voronoi_finite_polygons_2d(vor)
 
-    cmap=plt.cm.get_cmap('jet', 10)
+    cmap = plt.cm.get_cmap('jet', 10)
 
     normalize = colors.Normalize(vmin=0, vmax=6)
 
     # Plot the centroids
-    plt.scatter(group['rot_y'], group['rot_x'], c=cmap(normalize(group['entropy'])))
+    scatter = plt.scatter(group['rot_y'], group['rot_x'], c=cmap(normalize(group['entropy'])))
 
     # Add axis labels
-    plt.xlabel('rot_y')
-    plt.ylabel('rot_x')
+    plt.xlabel('phi')
+    plt.ylabel('theta')
 
-    plt.show()
+    # equal aspect ratio
+    plt.gca().set_aspect('equal', adjustable='box')
+
+    # Add legend for the colorbar, with ticks for every 0.1
+    sm = plt.colorbar(scatter, ticks=np.arange(0, 1.1, 0.25), fraction=0.022, pad=0.04)
+
+    plt.savefig("fibonacci_sphere_with_some_entropies.pdf", bbox_inches='tight')
+
+    # Plot on left side of the figure
+    fig, (ax1, ax2) = plt.subplots(1, 2)
 
     # Color regions by entropy, using colormap "jet" mapped to entropy, and transparent edges
     for idx, region in enumerate(regions):
         polygon = vertices[region]
-        plt.fill(*zip(*polygon), color=cmap(normalize(group['entropy'].iloc[idx])), edgecolor='none')
+        ax1.fill(*zip(*polygon), color=cmap(normalize(group['entropy'].iloc[idx])), edgecolor='none')
 
-    plt.plot(group['rot_y'], group['rot_x'], 'ko')
+    # Plot the centroids, with coordinate labels next to the points
+    ax1.plot(group['rot_y'], group['rot_x'], 'ko')
+    # Add labels next to each point showing its coordinates rot_x and rot_y
+    for (x, y) in zip(group['rot_y'], group['rot_x']):
+        ax1.text(x, y, '(' + str(int(x)) + ', ' + str(int(y)) + ')')
 
-    plt.xlim(0, 360)
-    plt.ylim(0, 180)
+    ax1.set_xlim(0, 360)
+    ax1.set_ylim(0, 180)
+
+    # populate the grid based on the map
+    for i in range(len(group)):
+        try:
+            print((int(group['rot_x'].iloc[i]), int(group['rot_y'].iloc[i])))
+            grid[
+                voronoi_to_grid_map[(int(group['rot_x'].iloc[i]), int(group['rot_y'].iloc[i]))][0],
+                voronoi_to_grid_map[(int(group['rot_x'].iloc[i]), int(group['rot_y'].iloc[i]))][1]
+            ] = group['entropy'].iloc[i]
+        except KeyError:
+            print(f"KeyError for {str(int(group['rot_x'].iloc[i])), str(int(group['rot_y'].iloc[i]))}")
+            continue
+        print(f"Key worked for {str(group['rot_x'].iloc[i])}, {str(group['rot_y'].iloc[i])}")
+
+    # plot the grid on the right side of the figure
+    ax2.imshow(grid, cmap=cmap, interpolation='nearest', origin='lower', extent=[0, 7, 0, 7])
 
     plt.show()
