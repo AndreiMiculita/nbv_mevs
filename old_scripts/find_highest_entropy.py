@@ -4,6 +4,7 @@ Finding highest entropy locally
 import argparse
 import glob
 import os
+from typing import List
 
 import cv2
 import imageio
@@ -13,13 +14,14 @@ import torch.nn as nn
 import tqdm
 from skimage.io import imread, imsave
 
-from old_scripts import canny_filter
+import canny_filter
 import neural_renderer as nr
 
 from load_off import load_off
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, '../data')
+
 
 # TODO: https://discuss.pytorch.org/t/calculating-the-entropy-loss/14510/3
 # see also
@@ -79,12 +81,16 @@ def make_gif(filename):
     writer.close()
 
 
-def main():
+def main(args: List[str] = None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-io', '--filename_obj', type=str, default=os.path.join(data_dir, 'teapot.obj'))
     parser.add_argument('-or', '--filename_output', type=str, default=os.path.join(data_dir, 'find_entr_result.mp4'))
     parser.add_argument('-g', '--gpu', type=int, default=0)
-    args = parser.parse_args()
+
+    if args is None:
+        args = parser.parse_args()  # parse arguments from sys.argv
+    else:
+        args = parser.parse_args(args)  # parse arguments from given list
 
     model = Model(args.filename_obj)
     model.cuda()
@@ -102,7 +108,7 @@ def main():
         print(image.shape)
         # print(images.detach().cpu().numpy()[0].max(), images.detach().cpu().numpy()[0].min())
         edges = model.entropy.detach().cpu().numpy()[0][0]
-        edges = (edges * 255/edges.max()).astype(np.uint8)
+        edges = (edges * 255 / edges.max()).astype(np.uint8)
         print("image.max(), image.min()", image.max(), image.min())
         print("edges.max(), edges.min()", edges.max(), edges.min())
         print(edges.shape)
