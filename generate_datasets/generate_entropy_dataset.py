@@ -28,7 +28,7 @@ import math
 
 parser = argparse.ArgumentParser(description="Generates a dataset in CSV format of depth-views entropy values.")
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.", required=True)
-parser.add_argument("--out", help="Select a desired output directory.", default="./entropy-dataset3")
+parser.add_argument("--out", help="Select a desired output directory.", default="./entropy-dataset4")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
                                                      "splits so each viewpoint is at an angle of multiple of 360/x. "
@@ -178,7 +178,7 @@ for split_set in ['train', 'test']:
             if args.debug:
                 print(f"[DEBUG] Current Object: {file}")
 
-            initial_views = fibonacci_sphere(40)
+            initial_views = fibonacci_sphere(10)
 
             rotations = []
 

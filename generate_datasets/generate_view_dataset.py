@@ -14,15 +14,15 @@ import math
 from open3d import *
 import open3d as o3d
 import numpy as np
-import cv2
+
+from geometry_utils.convert_coords import as_spherical
 from utility import normalize3d
-from sympy import pi, sin, cos, sqrt, acos, atan2
 from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.")
-parser.add_argument("--set", help="Subdirectory: 'train' or 'test'.", default='train')
-parser.add_argument("--out", help="Select a desired output directory.", default="./view-dataset3")
+parser.add_argument("--set", help="Subdirectory: 'train' or 'test'.", default='test')
+parser.add_argument("--out", help="Select a desired output directory.", default="./view-dataset-test")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
                                                      "splits so each viewpoint is at an angle of multiple of 360/x. "
@@ -94,31 +94,6 @@ def fibonacci_sphere(samples=1000):
 
 
 # credit https://stackoverflow.com/a/43893134/13200217
-def as_cartesian(rthetaphi):
-    # takes list rthetaphi (single coord)
-    r = rthetaphi[0]
-    theta = rthetaphi[1] * pi / 180  # to radian
-    phi = rthetaphi[2] * pi / 180
-    x = r * sin(theta) * cos(phi)
-    y = r * sin(theta) * sin(phi)
-    z = r * cos(theta)
-    return [x, y, z]
-
-
-def as_spherical(xyz):
-    """
-    Converts cartesian coordinates to spherical coordinates. Returns them in radians.
-    :param xyz: cartesian coordinates
-    :return: spherical coordinates
-    """
-    # takes list xyz (single coord)
-    x = xyz[0]
-    y = xyz[1]
-    z = xyz[2]
-    r = np.float(sqrt(x * x + y * y + z * z))
-    theta = np.float(acos(z / r))  # to degrees
-    phi = np.float(atan2(y, x))
-    return [r, theta, phi]
 
 
 def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
