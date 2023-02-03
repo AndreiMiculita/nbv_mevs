@@ -91,7 +91,7 @@ def voronoi_finite_polygons_2d(vor, radius=None):
 
 
 # Read all columns from csv
-df = pd.read_csv('./entropy-dataset3/entropy_dataset.csv')
+df = pd.read_csv('../data/entropy-dataset3/entropy_dataset.csv')
 print(df)
 # Group by the columns "label" and "obj_ind"
 df_grouped = df.groupby(['label', 'obj_ind'])

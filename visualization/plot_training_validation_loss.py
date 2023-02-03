@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 # where the Step column is the number of steps taken and the Value column is the loss
 # The csv files are exported from Tensorboard, they are expected to contain the columns "Wall time", "Step" and "Value"
 
-train_file = "run-version_38-tag-train_loss.csv"
-val_file = "run-version_38-tag-val_loss.csv"
+train_file = "../data/run-version_38-tag-train_loss.csv"
+val_file = "../data/run-version_38-tag-val_loss.csv"
 
 train_table = pd.read_csv(train_file)
 val_table = pd.read_csv(val_file)
