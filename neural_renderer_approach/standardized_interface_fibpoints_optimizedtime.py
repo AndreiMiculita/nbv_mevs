@@ -124,7 +124,7 @@ def get_best_views(mesh, n: int) -> Tuple[list, list]:
         loop = tqdm.tqdm(range(1000))
 
         # Initialize the model
-        model = Model(mesh, "data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_view)
+        model = Model(mesh, "../data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_view)
 
         model.cuda()
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
         print(f"\t{view.detach().cpu().numpy()} with loss {loss}")
 
     # print best views to file
-    with open("best_views.txt", "w") as f:
+    with open("../data/best_views.txt", "w") as f:
         for view, loss in zip(views, losses):
             f.write(f"{view.detach().cpu().numpy()} with loss {loss}\n")
 

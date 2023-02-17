@@ -11,7 +11,7 @@ import tqdm
 import imageio
 
 import neural_renderer as nr
-from plotting_utils import set_axes_equal, show_3d_axes_rgb
+from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, '../neural_renderer/examples/data')

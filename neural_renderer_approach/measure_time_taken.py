@@ -1,6 +1,6 @@
 import numpy as np
 
-from find_highest_entropy_noprints import main
+from neural_renderer_approach.find_highest_entropy_noprints import main
 import time
 import os
 import random

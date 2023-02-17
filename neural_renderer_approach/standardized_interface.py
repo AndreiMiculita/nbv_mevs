@@ -3,7 +3,6 @@
 import glob
 import math
 import os
-from typing import Tuple
 
 import imageio
 import open3d as o3d
@@ -12,14 +11,9 @@ import torch.nn as nn
 import tqdm
 
 import numpy as np
-from matplotlib import pyplot as plt
 from skimage.io import imread, imsave
 import neural_renderer as nr
 import cv2
-
-from scipy.cluster.hierarchy import dendrogram, linkage
-from scipy.cluster.hierarchy import fcluster
-
 from pprint import pprint
 from inspect import getmembers
 from types import FunctionType
@@ -27,6 +21,7 @@ from types import FunctionType
 
 # credit: https://stackoverflow.com/a/26127012/13200217
 def fibonacci_sphere(samples=1000):
+
     points = []
     phi = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
 
@@ -38,9 +33,6 @@ def fibonacci_sphere(samples=1000):
 
         x = math.cos(theta) * radius
         z = math.sin(theta) * radius
-
-        # Reorder so first points are on the sides
-        (x, y, z) = (y, x, z)
 
         points.append((x, y, z))
 
@@ -54,7 +46,7 @@ class Model(nn.Module):
         if initial_camera_position is None:
             initial_camera_position = [6, 10, -14]
         self.distance_threshold = 6.0
-        self.distance_penalty_weight = 10000.0
+        self.distance_penalty_weight = 3000.0
         self.tqdm_loop = tqdm_loop
 
         # Load mesh vertices and faces
@@ -105,27 +97,39 @@ class Model(nn.Module):
         return loss
 
 
-def get_best_views(mesh, n: int) -> Tuple[list, list, list]:
+def get_best_views(pcd: o3d.geometry.PointCloud, n: int) -> list:
+
+    # Remove the table plane using RANSAC
+    # TODO
+
+    pcd.estimate_normals()
+    pcd.orient_normals_consistent_tangent_plane(k=10)
+
+    # We need a mesh, so we do Poisson surface reconstruction
+    with o3d.utility.VerbosityContextManager(
+            o3d.utility.VerbosityLevel.Info) as cm:
+        mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd=pcd, depth=4)
+    print(mesh)
+    # print_attributes(mesh)
 
     # Visualize the mesh
     # o3d.visualization.draw_geometries([mesh])
 
     # For this mesh, we need to find the best n views
-    best_view_coords = []
-    best_view_images = []
-    losses = []
+    best_views = []
 
-    initial_views = fibonacci_sphere(n)
-    initial_view_radius = 16
-    # multiply every element in the list of lists by the initial_view_radius
-    initial_views = [[initial_view_radius * i for i in inner] for inner in initial_views]
-    print(f"Initial views: {initial_views}")
-
-    for idx, initial_view in enumerate(initial_views):
+    for view_i in range(n):
         loop = tqdm.tqdm(range(1000))
 
         # Initialize the model
-        model = Model(mesh, "data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_view)
+        if best_views:  # if we already have some views, use the opposite of the last view
+            initial_camera_position = - best_views[-1].detach().cpu().numpy()
+            # normalize and multiply by 16
+            initial_camera_position /= np.linalg.norm(initial_camera_position)
+            initial_camera_position *= 16
+            model = Model(mesh, "../data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_camera_position)
+        else:
+            model = Model(mesh, "../data/gaussian_reference.png", tqdm_loop=loop)
 
         model.cuda()
 
@@ -159,13 +163,10 @@ def get_best_views(mesh, n: int) -> Tuple[list, list, list]:
 
             if loss.item() < 70:
                 break
+        make_gif(f'standardized_interface_output{view_i}.mp4')
+        best_views.append(model.renderer.eye)
 
-        make_gif(f'standardized_interface_output{idx}.mp4')
-        best_view_coords.append(model.renderer.eye)
-        best_view_images.append(image)
-        losses.append(loss.item())
-
-    return best_view_coords, best_view_images, losses
+    return best_views
 
 
 def make_gif(filename):
@@ -175,93 +176,17 @@ def make_gif(filename):
             os.remove(filename)
     writer.close()
 
-
-def get_best_views_from_pcd(pcd, n: int) -> Tuple[list, list, list]:
-    # We need a mesh, so we do Poisson surface reconstruction
-    with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Info) as cm:
-        mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd=pcd, depth=4)
-    print(mesh)
-    return get_best_views(mesh, n)
-
-
-def get_best_views_from_file(objfile: str, n: int) -> Tuple[list, list, list]:
-    if objfile.endswith('.obj') or objfile.endswith('.off'):
-        mesh = o3d.io.read_triangle_mesh(objfile)
-        return get_best_views(mesh, n)
-    elif objfile.endswith('.pcd'):
-        # Load the point cloud
-        pcd = o3d.io.read_point_cloud(objfile)
-
-        # Visualize the point cloud
-        # o3d.visualization.draw_geometries([pcd])
-
-        # Remove the table plane using RANSAC
-        # TODO
-
-        pcd.estimate_normals()
-        pcd.orient_normals_consistent_tangent_plane(k=10)
-
-        return get_best_views_from_pcd(pcd, n)
-
-
 if __name__ == "__main__":
+    # Load the point cloud
+    pcd = o3d.io.read_point_cloud("/home/andrei/datasets/washington_short_version/Category/banana_Category/banana_object_10.pcd")
+
+    # Visualize the point cloud
+    # o3d.visualization.draw_geometries([pcd])
+
+    # exit()
+
     # Get the best views
-    views, view_imgs, losses = get_best_views_from_file(objfile="/home/andrei/datasets/teapot.obj", n=3)
-
-    print("The best views (with respective losses) are:")
-    for view, loss in zip(views, losses):
-        print(f"\t{view.detach().cpu().numpy()} with loss {loss}")
-    for idx, view_img in enumerate(view_imgs):
-        cv2.imwrite(f"view_{idx}.png", view_img)
-
-    # print best views to file
-    with open("best_views.txt", "w") as f:
-        for view, loss in zip(views, losses):
-            f.write(f"{view.detach().cpu().numpy()} with loss {loss}\n")
-
-        print("Removing views that are too close to each other (remove higher loss view)")
-        # Remove views that are too close to each other using hierarchical clustering
-        # credit: https://datascience.stackexchange.com/a/47635
-        X = np.array([v.detach().cpu().numpy() for v in views])
-        Z = linkage(X,
-                    method='complete',  # dissimilarity metric: max distance across all pairs of
-                    # records between two clusters
-                    metric='euclidean'
-                    )  # you can peek into the Z matrix to see how clusters are
-                        # merged at each iteration of the algorithm
-
-        # calculate full dendrogram and visualize it
-        plt.figure(figsize=(30, 10))
-        dendrogram(Z)
-        plt.show()
-
-        max_d = 1
-        clusters = fcluster(Z, max_d, criterion='distance')
-
-        # print("Clusters:")
-        print(clusters)
-
-        # Only keep lowest loss view per cluster
-        views_to_keep = []
-        losses_to_keep = []
-
-        for i in set(clusters):
-            print(f"Cluster {i}")
-            for j in range(len(views)):
-                if clusters[j] == i:
-                    print(f"\t{str(views[j].detach().cpu().numpy())}")
-            views_in_cluster = [views[j] for j in range(len(views)) if clusters[j] == i]
-            losses_in_cluster = [losses[j] for j in range(len(views)) if clusters[j] == i]
-
-            views_to_keep.append(views_in_cluster[np.argmin(losses_in_cluster)])
-            losses_to_keep.append(np.min(losses_in_cluster))
-
-        print("After removing views that are too close to each other, the best views are:")
-        for view, loss in zip(views_to_keep, losses_to_keep):
-            print(f"\t{view.detach().cpu().numpy()} with loss {loss}")
-
-        f.write("\n\nCleaned up:\n")
-        for view, loss in zip(views_to_keep, losses_to_keep):
-            f.write(f"{view.detach().cpu().numpy()} with loss {loss}\n")
+    views = get_best_views(pcd, 3)
+    print("The best views are:")
+    print("\n".join(["\t%s" % str(v.detach().cpu().numpy()) for v in views]))
 
