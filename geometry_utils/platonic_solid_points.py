@@ -12,7 +12,7 @@ but you probably want to set them to something else.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from plotting_utils import set_axes_equal, show_3d_axes_rgb
+from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 phi = (1 + np.sqrt(5)) / 2  # the golden ratio, appears in some coordinates
 
