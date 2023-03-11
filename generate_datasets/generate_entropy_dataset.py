@@ -18,6 +18,8 @@ import shutil
 from open3d import *
 import open3d as o3d
 import cv2
+
+from geometry_utils.convert_coords import as_spherical
 from utility import normalize3d
 import numpy as np
 import pandas as pd
@@ -80,34 +82,6 @@ def fibonacci_sphere(samples=1000):
         points.append((x, y, z))
 
     return points
-
-
-# credit https://stackoverflow.com/a/43893134/13200217
-def as_cartesian(rthetaphi):
-    # takes list rthetaphi (single coord)
-    r = rthetaphi[0]
-    theta = rthetaphi[1] * pi / 180  # to radian
-    phi = rthetaphi[2] * pi / 180
-    x = r * sin(theta) * cos(phi)
-    y = r * sin(theta) * sin(phi)
-    z = r * cos(theta)
-    return [x, y, z]
-
-
-def as_spherical(xyz):
-    """
-    Converts cartesian coordinates to spherical coordinates. Returns them in radians.
-    :param xyz: cartesian coordinates
-    :return: spherical coordinates
-    """
-    # takes list xyz (single coord)
-    x = xyz[0]
-    y = xyz[1]
-    z = xyz[2]
-    r = np.float(sqrt(x * x + y * y + z * z))
-    theta = np.float(acos(z / r))  # to degrees
-    phi = np.float(atan2(y, x))
-    return [r, theta, phi]
 
 
 def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):

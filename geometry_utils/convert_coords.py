@@ -23,7 +23,7 @@ def as_spherical(xyz):
     x = xyz[0]
     y = xyz[1]
     z = xyz[2]
-    r = np.float(sqrt(x * x + y * y + z * z))
-    theta = np.float(acos(z / r))  # to degrees
-    phi = np.float(atan2(y, x))
+    r = float(sqrt(x * x + y * y + z * z))
+    theta = float(acos(z / r))  # to degrees
+    phi = float(atan2(y, x))
     return [r, theta, phi]

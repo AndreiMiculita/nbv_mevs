@@ -2,6 +2,8 @@ import math
 from sympy import pi, sin, cos, sqrt, acos, atan2
 import numpy as np
 import matplotlib.pyplot as plt
+
+from geometry_utils.convert_coords import as_spherical
 from plotting_utils import set_axes_equal, show_3d_axes_rgb
 from sklearn_som.som import SOM
 
@@ -26,34 +28,6 @@ def fibonacci_sphere(samples=1000):
         points.append((x, y, z))
 
     return points
-
-
-# credit https://stackoverflow.com/a/43893134/13200217
-def as_cartesian(rthetaphi):
-    # takes list rthetaphi (single coord)
-    r = rthetaphi[0]
-    theta = rthetaphi[1] * pi / 180  # to radian
-    phi = rthetaphi[2] * pi / 180
-    x = r * sin(theta) * cos(phi)
-    y = r * sin(theta) * sin(phi)
-    z = r * cos(theta)
-    return [x, y, z]
-
-
-def as_spherical(xyz):
-    """
-    Converts cartesian coordinates to spherical coordinates. Returns them in radians.
-    :param xyz: cartesian coordinates
-    :return: spherical coordinates
-    """
-    # takes list xyz (single coord)
-    x = xyz[0]
-    y = xyz[1]
-    z = xyz[2]
-    r = np.float(sqrt(x * x + y * y + z * z))
-    theta = np.float(acos(z / r))  # to degrees
-    phi = np.float(atan2(y, x))
-    return [r, theta, phi]
 
 
 if __name__ == "__main__":
