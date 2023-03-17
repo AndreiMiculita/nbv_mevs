@@ -11,15 +11,17 @@ from node_weighted_graph import Node
 
 def build_graph_from_spherical_coords(vertices_spherical: np.ndarray) -> List[Node]:
     """
-    Given a list of spherical coordinates, build a graph with the nodes, based on the triangulation of the sphere.
+    Given a list of spherical coordinates (degrees), build a graph with the nodes,
+     based on the triangulation of the sphere.
     :param vertices_spherical:
     :return:
     """
 
     vertices_lon: np.ndarray = np.radians(vertices_spherical.T[0])
     vertices_lat: np.ndarray = np.radians(vertices_spherical.T[1])
+    vertices_weights: np.ndarray = vertices_spherical.T[2]
 
-    spherical_triangulation = stripy.sTriangulation(lons=vertices_lon, lats=vertices_lat)
+    spherical_triangulation = stripy.sTriangulation(lons=vertices_lon, lats=vertices_lat, permute=True)
 
     # Build the graph
     graph: List[Node] = []
@@ -27,7 +29,7 @@ def build_graph_from_spherical_coords(vertices_spherical: np.ndarray) -> List[No
         node = Node(name=f'{vertices_spherical.T[0][i]}, {vertices_spherical.T[1][i]}',
                     x=spherical_triangulation.lons[i],
                     y=spherical_triangulation.lats[i],
-                    weight=i)
+                    weight=vertices_weights[i])
         graph.append(node)
 
     segs = spherical_triangulation.identify_segments()

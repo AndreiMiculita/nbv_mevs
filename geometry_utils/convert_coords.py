@@ -3,13 +3,17 @@ from sympy import pi, sin, cos, sqrt, acos, atan2
 
 
 def as_cartesian(rthetaphi):
-    # takes list rthetaphi (single coord)
+    """
+    Converts spherical coordinates to cartesian coordinates.
+    :param rthetaphi: Spherical coordinates, as a list of [r, theta, phi] in degrees
+    :return:
+    """
     r = rthetaphi[0]
     theta = rthetaphi[1] * pi / 180  # to radian
     phi = rthetaphi[2] * pi / 180
-    x = r * sin(theta) * cos(phi)
-    y = r * sin(theta) * sin(phi)
-    z = r * cos(theta)
+    x = float(r * sin(theta) * cos(phi))
+    y = float(r * sin(theta) * sin(phi))
+    z = float(r * cos(theta))
     return [x, y, z]
 
 
