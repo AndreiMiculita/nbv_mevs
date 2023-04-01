@@ -7,7 +7,7 @@ import numpy as np
 import random
 import cv2
 
-import viewpoint_utils
+from visualization import viewpoint_utils
 
 # ModelNet10 classes
 class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet']
