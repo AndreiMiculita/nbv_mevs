@@ -1,4 +1,4 @@
-[submodule "multi-view-tool"]
+[submodule "generate_datasets/multi-view-tool"]
 	path = generate_datasets/multi-view-tool
 	url = git@github.com:tparisotto/multi-view-tool.git
 [submodule "neural_renderer"]
