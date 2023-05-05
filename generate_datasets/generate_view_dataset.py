@@ -10,14 +10,15 @@ spaced vertically on a sphere around the object.
 
 import argparse
 import math
+import os
+import sys
+from time import time
 
-from open3d import *
-import open3d as o3d
 import numpy as np
+import open3d as o3d
 
 from geometry_utils.convert_coords import as_spherical
 from utility import normalize3d
-from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.")
@@ -127,15 +128,19 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
     vis.update_renderer()
 
     # Capture depth image
-    vis.capture_depth_point_cloud("{}/{}/{}_{}_theta_{}_phi_{}_vc_{}.pcd".format(OUT_DIR,
-                                                                                   ViewData.obj_label,
-                                                                                   ViewData.obj_label,
-                                                                                   ViewData.obj_index,
-                                                                                   int(ViewData.theta),
-                                                                                   int(ViewData.phi),
-                                                                                   ViewData.view_index))
+    vis.capture_depth_point_cloud(get_dataset_path())
 
     vis.destroy_window()
+
+
+def get_dataset_path():
+    return "{}/{}/{}_{}_theta_{}_phi_{}_vc_{}.pcd".format(OUT_DIR,
+                                                          ViewData.obj_label,
+                                                          ViewData.obj_label,
+                                                          ViewData.obj_index,
+                                                          int(ViewData.theta),
+                                                          int(ViewData.phi),
+                                                          ViewData.view_index)
 
 
 labels = []
@@ -166,7 +171,7 @@ for label in labels:
             print(f"[INFO] Current object: {ViewData.obj_label}_{ViewData.obj_index}")
             print(
                 f"[DEBUG] ViewData:\n [objpath: {ViewData.obj_path},\n filename: {ViewData.obj_filename},\n label: {ViewData.obj_label},\n index: {ViewData.obj_index}]")
-        mesh = io.read_triangle_mesh(ViewData.obj_path)
+        mesh = o3d.io.read_triangle_mesh(ViewData.obj_path)
         mesh.vertices = normalize3d(mesh.vertices)
         mesh.compute_vertex_normals()
 
