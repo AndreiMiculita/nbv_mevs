@@ -1,11 +1,13 @@
 import math
-from sympy import pi, sin, cos, sqrt, acos, atan2
-import numpy as np
+import os
+
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn_som.som import SOM
+from sympy import pi
 
 from geometry_utils.convert_coords import as_spherical
 from plotting_utils import set_axes_equal, show_3d_axes_rgb
-from sklearn_som.som import SOM
 
 
 # credit: https://stackoverflow.com/a/26127012/13200217
@@ -30,7 +32,11 @@ def fibonacci_sphere(samples=1000):
     return points
 
 
-if __name__ == "__main__":
+def main():
+    # Create assets folder if it doesn't exist
+    if not os.path.exists("../assets/fibonacci_sphere_vertices/"):
+        os.makedirs("../assets/fibonacci_sphere_vertices/")
+
     # generate a sphere of 10 points
     points = fibonacci_sphere(samples=10)
 
@@ -45,7 +51,7 @@ if __name__ == "__main__":
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
     show_3d_axes_rgb(ax)
-    plt.savefig("fibonacci_sphere_points_10.pdf", bbox_inches='tight')
+    plt.savefig("../assets/fibonacci_sphere_vertices/fibonacci_sphere_points_10.pdf", bbox_inches='tight')
 
     # generate a sphere of 40 points
     points = fibonacci_sphere(samples=40)
@@ -61,7 +67,7 @@ if __name__ == "__main__":
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
     show_3d_axes_rgb(ax)
-    plt.savefig("fibonacci_sphere_points_40.pdf", bbox_inches='tight')
+    plt.savefig("../assets/fibonacci_sphere_vertices/fibonacci_sphere_points_40.pdf", bbox_inches='tight')
 
     # convert to spherical coordinates as np array
 
@@ -103,7 +109,7 @@ if __name__ == "__main__":
     # equal axes
     ax.set_aspect('equal', adjustable='box')
 
-    plt.savefig("fibonacci_sphere_spherical_coords_2d.pdf", bbox_inches='tight')
+    plt.savefig("../assets/fibonacci_sphere_vertices/fibonacci_sphere_spherical_coords_2d.pdf", bbox_inches='tight')
 
     # Fit an SOM to map the spherical coordinates to a 2d grid
     # Unfortunately not working
@@ -119,3 +125,7 @@ if __name__ == "__main__":
     ax.set_ylabel("theta")
     ax.set_xlabel("phi")
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

@@ -96,8 +96,12 @@ fig.set_size_inches(9, 5)
 fig.tight_layout()
 plt.show()
 
+# Create the assets folder if it doesn't exist
+if not os.path.exists("../assets/dataset/"):
+    os.makedirs("../assets/dataset/")
+
 # Save the figure as pdf in the assets folder
-fig.savefig('../assets/num_points_per_class.pdf', bbox_inches='tight')
+fig.savefig('../assets/dataset/num_points_per_class.pdf', bbox_inches='tight')
 
 # Print the mean and std dev of the number of points for all objects
 for idx, num_points_list in enumerate(num_points_list_all):

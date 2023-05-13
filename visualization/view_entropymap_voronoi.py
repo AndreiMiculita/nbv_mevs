@@ -1,8 +1,10 @@
-import pandas as pd
-import numpy as np
+import os
+
 import matplotlib.pyplot as plt
-from scipy.spatial import Voronoi, voronoi_plot_2d
+import numpy as np
+import pandas as pd
 from matplotlib import colors
+from scipy.spatial import Voronoi
 
 
 # Source: https://stackoverflow.com/a/20678647/13200217
@@ -180,7 +182,10 @@ for name, group in df_grouped:
     # Add legend for the colorbar, with ticks for every 0.1
     sm = plt.colorbar(scatter, ticks=np.arange(0, 1.1, 0.25), fraction=0.022, pad=0.04)
 
-    plt.savefig("fibonacci_sphere_with_some_entropies.pdf", bbox_inches='tight')
+    # Create assets folder if it doesn't exist
+    if not os.path.exists('../assets/fibonacci_sphere_vertices/'):
+        os.makedirs('../assets/fibonacci_sphere_vertices/')
+    plt.savefig('../assets/fibonacci_sphere_vertices/fibonacci_sphere_with_some_entropies.pdf', bbox_inches='tight')
 
     # Plot on left side of the figure
     fig, (ax1, ax2) = plt.subplots(1, 2)

@@ -103,7 +103,11 @@ def main():
         set_axes_equal(ax)
         show_3d_axes_rgb(ax)
         plt.show()
-        # plt.savefig(func.__name__.replace("make_", "") + '.pdf', bbox_inches='tight')
+        # Create asset folder if it doesn't exist
+        import os
+        if not os.path.exists('../assets/platonic_solid_vertices/'):
+            os.makedirs('../assets/platonic_solid_vertices/')
+        plt.savefig(func.__name__.replace("make_", "../assets/platonic_solid_vertices/") + '.pdf', bbox_inches='tight')
 
 
 if __name__ == '__main__':
