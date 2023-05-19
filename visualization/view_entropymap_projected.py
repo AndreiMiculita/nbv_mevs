@@ -47,7 +47,7 @@ def main():
 
     # view the sphere points as interactive 3d scatter plot
     ax = plt.axes(projection="3d")
-    ax.scatter3D(points[:, 0], points[:, 1], points[:, 2], s=100, c='b')
+    ax.scatter3D(points[:, 0], points[:, 1], points[:, 2], s=100)
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
     show_3d_axes_rgb(ax)
@@ -63,7 +63,7 @@ def main():
 
     # view the sphere points as interactive 3d scatter plot
     ax = plt.axes(projection="3d")
-    ax.scatter3D(points[:, 0], points[:, 1], points[:, 2], s=100, c='b')
+    ax.scatter3D(points[:, 0], points[:, 1], points[:, 2], s=100)
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
     show_3d_axes_rgb(ax)
@@ -112,7 +112,7 @@ def main():
     plt.savefig("../assets/fibonacci_sphere_vertices/fibonacci_sphere_spherical_coords_2d.pdf", bbox_inches='tight')
 
     # Fit an SOM to map the spherical coordinates to a 2d grid
-    # Unfortunately not working
+    # Unfortunately not working as expected
     som = SOM(m=7, n=7, dim=2)
     # Fit just columns 2 and 0
     som.fit(spherical[:, [2, 0]])

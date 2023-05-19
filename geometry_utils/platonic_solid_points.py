@@ -98,7 +98,7 @@ def main():
         vertices = func()
         print(vertices)
         ax = plt.axes(projection='3d')
-        ax.scatter3D(*vertices.transpose(), s=100, c='b')
+        ax.scatter3D(*vertices.transpose(), s=100)
         ax.set_box_aspect([1, 1, 1])
         set_axes_equal(ax)
         show_3d_axes_rgb(ax)
