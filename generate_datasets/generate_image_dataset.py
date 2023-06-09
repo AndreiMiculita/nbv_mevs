@@ -66,10 +66,6 @@ class ViewData:
 if os.path.exists(os.path.join(BASE_DIR, OUT_DIR)):
     print("[Error] Folder already exists.")
     exit(0)
-else:
-    os.makedirs(os.path.join(OUT_DIR, "image"))
-    os.makedirs(os.path.join(OUT_DIR, "depth"))
-    os.makedirs(os.path.join(OUT_DIR, "pcd"))
 
 
 # credit: https://stackoverflow.com/a/26127012/13200217
