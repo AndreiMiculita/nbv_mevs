@@ -3,7 +3,7 @@
 import open3d as o3d
 import sys
 
-from visualization.plotting_utils import custom_draw_geometry_with_key_callback
+from visualization.custom_draw_geometry_with_key_callback import custom_draw_geometry_with_key_callback
 
 
 def view_pcd(rgb_path, depth_path):
