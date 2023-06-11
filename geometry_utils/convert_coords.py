@@ -5,7 +5,7 @@ from sympy import pi, sin, cos, sqrt, acos, atan2
 def as_cartesian(rthetaphi):
     """
     Converts spherical coordinates to cartesian coordinates.
-    :param rthetaphi: Spherical coordinates, as a list of [r, theta, phi] in degrees
+    :param rthetaphi: Spherical coordinates, as a list of [r, theta, phi] in degrees; theta is latitude, phi is longitude
     :return:
     """
     r = rthetaphi[0]
