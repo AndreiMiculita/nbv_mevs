@@ -1,47 +1,53 @@
 """Given a list of spherical coordinates, build a graph with the nodes, based on the triangulation of the sphere."""
 from typing import List
 
-import stripy as stripy
-import numpy as np
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import numpy as np
+import stripy as stripy
 
 from node_weighted_graph import Node
+from geometry_utils.convert_coords import as_cartesian
 
 
 def build_graph_from_spherical_coords(vertices_spherical: np.ndarray) -> List[Node]:
     """
     Given a list of spherical coordinates (degrees), build a graph with the nodes,
      based on the triangulation of the sphere.
-    :param vertices_spherical:
+    The shape of the input array is (n, 2) or (n, 3), where n is the number of vertices.
+    The first column is the longitude, the second is the latitude, and the third is the (optional) weight.
+    :param vertices_spherical_coords:
     :return:
     """
 
-    vertices_lon: np.ndarray = np.radians(vertices_spherical.T[0])
-    vertices_lat: np.ndarray = np.radians(vertices_spherical.T[1])
-    vertices_weights: np.ndarray = vertices_spherical.T[2]
+    vertices_lons: np.ndarray = np.radians(vertices_spherical_coords.T[0])
+    vertices_lats: np.ndarray = np.radians(vertices_spherical_coords.T[1])
+    # if there is a third column, it is the weight
+    if vertices_spherical_coords.shape[1] == 3:
+        vertices_weights: np.ndarray = vertices_spherical_coords.T[2]
 
-    spherical_triangulation = stripy.sTriangulation(lons=vertices_lon, lats=vertices_lat, permute=True)
+    spherical_triangulation = stripy.sTriangulation(lons=vertices_lons, lats=vertices_lats, permute=True)
 
     # Build the graph
     graph: List[Node] = []
     for i in range(spherical_triangulation.npoints):
-        node = Node(name=f'{vertices_spherical.T[0][i]}, {vertices_spherical.T[1][i]}',
-                    x=spherical_triangulation.lons[i],
-                    y=spherical_triangulation.lats[i],
-                    weight=vertices_weights[i])
+        node = Node(name=f'{vertices_spherical_coords.T[0][i]}, {vertices_spherical_coords.T[1][i]}',
+                    lon=spherical_triangulation.lons[i],
+                    lat=spherical_triangulation.lats[i],
+                    weight=vertices_weights[i] if vertices_spherical_coords.shape[1] == 3 else None)
         graph.append(node)
 
-    segs = spherical_triangulation.identify_segments()
+    segments = spherical_triangulation.identify_segments()
 
-    for s1, s2 in segs:
+    for s1, s2 in segments:
         graph[s1].add_neighbor(graph[s2])
 
     return graph
 
 
 def main():
-    vertices_LatLonDeg = np.array(
+    # Lat, lon
+    vertices_coords_degrees = np.array(
         [[102.0, 166.0],
          [102.0, 57.0],
          [106.0, 232.0],
@@ -83,8 +89,8 @@ def main():
          [92.0, 97.0],
          [98.0, 274.0]])
 
-    vertices_lat = np.radians(vertices_LatLonDeg.T[0])
-    vertices_lon = np.radians(vertices_LatLonDeg.T[1])
+    vertices_lat = np.radians(vertices_coords_degrees.T[0])
+    vertices_lon = np.radians(vertices_coords_degrees.T[1])
 
     spherical_triangulation = stripy.sTriangulation(lons=vertices_lon, lats=vertices_lat)
     print(spherical_triangulation.areas())

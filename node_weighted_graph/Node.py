@@ -4,10 +4,10 @@ class Node():
     This is used for creating a weighted vertex graph.
     """
 
-    def __init__(self, name: str, x, y, weight):
+    def __init__(self, name: str, lon, lat, weight):
         self.name: str = name
-        self.x = x
-        self.y = y
+        self.lon = lon
+        self.lat = lat
         self.weight = weight
         self.neighbors = set()
 
