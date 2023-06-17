@@ -1,8 +1,10 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from geometry_utils.convert_coords import as_cartesian
-from node_weighted_graph import Node, build_graph_from_spherical_coords
+from geometry_utils.convert_coords import as_cartesian, as_spherical
+from node_weighted_graph import build_graph_from_spherical_coords_with_delaunay
+from node_weighted_graph.build_graph_from_spherical_coords import \
+    build_graph_from_spherical_coords_with_nearest_neighbors
 from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 

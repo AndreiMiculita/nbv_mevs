@@ -10,7 +10,7 @@ from node_weighted_graph import Node
 from geometry_utils.convert_coords import as_cartesian
 
 
-def build_graph_from_spherical_coords(vertices_spherical: np.ndarray) -> List[Node]:
+def build_graph_from_spherical_coords_with_delaunay(vertices_spherical_coords: np.ndarray) -> List[Node]:
     """
     Given a list of spherical coordinates (degrees), build a graph with the nodes,
      based on the triangulation of the sphere.
@@ -41,6 +41,51 @@ def build_graph_from_spherical_coords(vertices_spherical: np.ndarray) -> List[No
 
     for s1, s2 in segments:
         graph[s1].add_neighbor(graph[s2])
+
+    return graph
+
+
+def build_graph_from_spherical_coords_with_nearest_neighbors(vertices_spherical_coords: np.ndarray,
+                                                             threshold: float = 1) -> List[Node]:
+    """
+    Given a list of spherical coordinates (degrees), build a graph with the nodes,
+     based on the nearest neighbors.
+    :param vertices_spherical_coords: (n, 2) or (n, 3) array of spherical coordinates (degrees)
+    :param threshold: the maximum distance between two nodes to be considered neighbors
+    :return:
+    """
+
+    vertices_lons: np.ndarray = np.radians(vertices_spherical_coords.T[0])
+    vertices_lats: np.ndarray = np.radians(vertices_spherical_coords.T[1])
+    # if there is a third column, it is the weight
+    if vertices_spherical_coords.shape[1] == 3:
+        vertices_weights: np.ndarray = vertices_spherical_coords.T[2]
+
+    # names are letters from the alphabet
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    # Build the graph
+    graph: List[Node] = []
+    for i in range(vertices_spherical_coords.shape[0]):
+        node = Node(name=f'{alphabet[i]}: {vertices_spherical_coords.T[0][i]}, {vertices_spherical_coords.T[1][i]}',
+                    lon=vertices_lons[i],
+                    lat=vertices_lats[i],
+                    weight=vertices_weights[i] if vertices_spherical_coords.shape[1] == 3 else None)
+        graph.append(node)
+
+    # Find the nearest neighbors; note that the angles in node.lat and node.long are in radians and as_cartesian expects degrees
+    for i, node in enumerate(graph):
+        for j, other_node in enumerate(graph):
+            if i != j:
+                node_coords = np.array(as_cartesian([1, np.degrees(node.lat), np.degrees(node.lon)]))
+                other_node_coords = np.array(as_cartesian([1, np.degrees(other_node.lat), np.degrees(other_node.lon)]))
+                distance = np.linalg.norm(node_coords - other_node_coords)
+                print(f'Distance between {node.name} - {other_node.name}: {distance}')
+                print(f'Coords of {node.name}: {node_coords}')
+                print(f'Coords of {other_node.name}: {other_node_coords}')
+                if distance <= threshold:
+                    node.add_neighbor(other_node)
+                    print(f'Connected: {node.name} - {other_node.name}')
 
     return graph
 
