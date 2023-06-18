@@ -1,3 +1,6 @@
+import math
+import networkx as nx
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -8,57 +11,48 @@ from node_weighted_graph.build_graph_from_spherical_coords import \
 from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 
-def plot_entropy_views_graph_in_3d(entropy_views: np.ndarray):
-    """
-    Make a 3D plot of the entropy views graph.
-    Use a 3D scatter plot to plot the nodes.
-    Use a 3D line plot to plot the edges.
-    :param entropy_views:
-    :return:
-    """
+# credit: https://stackoverflow.com/a/26127012/13200217
+def fibonacci_sphere(samples=1000):
+    points = []
+    phi = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
 
-    # The columns of entropy_views are: latitude, longitude, entropy
-    graph = build_graph_from_spherical_coords(entropy_views)
+    for i in range(samples):
+        y = 1 - (i / float(samples - 1)) * 2  # y goes from 1 to -1
+        radius = math.sqrt(1 - y * y)  # radius at y
 
-    print(f"graph: {graph}")
-    for node in graph:
-        print(f"node: {node}, x: {node.x}, y: {node.y}, weight: {node.weight}")
+        theta = phi * i  # golden angle increment
 
-    # Convert the coords from spherical to cartesian, assume a unit sphere
-    nodes_coords = np.array([as_cartesian([1, np.degrees(node.x), np.degrees(node.y)]) for node in graph])
+        x = math.cos(theta) * radius
+        z = math.sin(theta) * radius
 
-    print(f"nodes_coords: {nodes_coords}")
-    print(f"nodes_coords.shape: {nodes_coords.shape}")
+        # Reorder so first points are on the sides
+        (x, y, z) = (y, x, z)
 
-    # Color based on weight
-    nodes_weights = np.array([node.weight for node in graph])
+        points.append((x, y, z))
 
-    # Plot the nodes as a 3D scatter plot
-    ax = plt.axes(projection="3d")
-    ax.scatter3D(nodes_coords[:, 0], nodes_coords[:, 1], nodes_coords[:, 2], s=100, c=nodes_weights)
-
-    # Plot the edges as a 3D line plot
-    for node in graph:
-        for neighbor in node.neighbors:
-            node_coords = as_cartesian([1, np.degrees(node.x), np.degrees(node.y)])
-            neighbor_coords = as_cartesian([1, np.degrees(neighbor.x), np.degrees(neighbor.y)])
-            ax.plot3D([node_coords[0], neighbor_coords[0]], [node_coords[1], neighbor_coords[1]],
-                      [node_coords[2], neighbor_coords[2]], 'gray')
-
-    ax.set_box_aspect([1, 1, 1])
-    set_axes_equal(ax)
-    show_3d_axes_rgb(ax)
-
-    # Show the plot
-    plt.show()
+    return points
 
 
-def main():
-    # Wider print for np arrays
-    np.set_printoptions(suppress=True, linewidth=500)
+def get_fibonacci_sphere_coords(n=10):
+    some_fibonacci_sphere = fibonacci_sphere(samples=n)
 
-    # Load the entropy views (normally from csv)
-    entropy_views = np.array([
+    some_fibonacci_sphere = np.array(some_fibonacci_sphere)
+
+    # They're cartesian coordinates, so we need to convert them to spherical
+    for i in range(len(some_fibonacci_sphere)):
+        some_fibonacci_sphere[i] = as_spherical(some_fibonacci_sphere[i])
+
+    print(some_fibonacci_sphere)
+    # Discard 1st column (radius)
+    some_fibonacci_sphere = np.degrees(some_fibonacci_sphere[:, 1:])
+
+    print(some_fibonacci_sphere)
+
+    return some_fibonacci_sphere
+
+
+def get_example_entropy_views():
+    return np.array([
         [87.0, 318.0, 1.6772159883221216],
         [106.0, 232.0, 1.8792914659519087],
         [102.0, 57.0, 1.693029824628385],
@@ -101,6 +95,77 @@ def main():
         [88.0, 18.0, 1.1505704574550892],
 
     ])
+
+
+def plot_entropy_views_graph_in_3d(entropy_views: np.ndarray):
+    """
+    Make a 3D plot of the entropy views graph.
+    Use a 3D scatter plot to plot the nodes.
+    Use a 3D line plot to plot the edges.
+    :param entropy_views:
+    :return:
+    """
+
+    # The columns of entropy_views are: latitude, longitude, entropy
+    graph = build_graph_from_spherical_coords_with_nearest_neighbors(entropy_views)
+
+    print(f"graph: {graph}")
+    for node in graph:
+        print(f"node: {node}, x: {node.lon}, y: {node.lat}, weight: {node.weight}")
+
+    # Convert to a networkx graph
+    G = nx.Graph()
+    # Add nodes with their attributes
+    for node in graph:
+        G.add_node(node.name)
+        for neighbor in node.neighbors:
+            G.add_edge(node.name, neighbor.name)
+
+    print(f"G.nodes: {G.nodes}")
+    print(f"G.edges: {G.edges}")
+
+    for node in G.nodes:
+        for attrib in G.nodes[node]:
+            print(type(G.nodes[node][attrib]))
+
+    # Save to a file with write_graphml, append number of nodes to filename
+    nx.write_graphml(G, f'entropy_views_{entropy_views.shape[0]}.graphml')
+
+    # Convert the coords from spherical to cartesian, assume a unit sphere
+    nodes_coords = np.array([as_cartesian([1, np.degrees(node.lon), np.degrees(node.lat)]) for node in graph])
+
+    print(f"nodes_coords: {nodes_coords}")
+    print(f"nodes_coords.shape: {nodes_coords.shape}")
+
+    # Color based on weight
+    nodes_weights = np.array([node.weight for node in graph])
+
+    # Plot the nodes as a 3D scatter plot
+    ax = plt.axes(projection="3d")
+    ax.scatter3D(nodes_coords[:, 0], nodes_coords[:, 1], nodes_coords[:, 2], s=100, c=nodes_weights)
+
+    # Plot the edges as a 3D line plot
+    for node in graph:
+        for neighbor in node.neighbors:
+            node_coords = as_cartesian([1, np.degrees(node.lon), np.degrees(node.lat)])
+            neighbor_coords = as_cartesian([1, np.degrees(neighbor.x), np.degrees(neighbor.y)])
+            ax.plot3D([node_coords[0], neighbor_coords[0]], [node_coords[1], neighbor_coords[1]],
+                      [node_coords[2], neighbor_coords[2]], 'gray')
+
+    ax.set_box_aspect([1, 1, 1])
+    set_axes_equal(ax)
+    show_3d_axes_rgb(ax)
+
+    # Show the plot
+    plt.show()
+
+
+def main():
+    # Wider print for np arrays
+    np.set_printoptions(suppress=True, linewidth=500)
+
+    # Load the entropy views (normally from csv)
+    entropy_views = get_fibonacci_sphere_coords(10)
 
     # Plot the entropy views graph in 3D
     plot_entropy_views_graph_in_3d(entropy_views)
