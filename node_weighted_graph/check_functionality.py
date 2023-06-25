@@ -6,24 +6,24 @@ from typing import List
 
 import numpy as np
 
-from node_weighted_graph import build_graph_from_spherical_coords
+# from node_weighted_graph import build_graph_from_spherical_coords
 from node_weighted_graph import find_local_maximum_nodes
-from node_weighted_graph import generate_graph_image
+from node_weighted_graph import generate_graph_image_2d
 from node_weighted_graph import Node
 
 
 def get_example_graph() -> List[Node]:
     # Example graph
-    A = Node('A', 1, 1, 5)
+    A = Node('A', 1, 0.5, 5)
     B = Node('B', 2, 0, 8)
     C = Node('C', 3, 0, 31)
-    D = Node('D', 4, 1, 7)
-    E = Node('E', 5, 1, 44)
-    F = Node('F', 6, 1, 6)
-    G = Node('G', 1, 2, 4)
-    H = Node('H', 2, 2, 24)
-    I = Node('I', 3, 2, 11)
-    J = Node('J', 4, 2, 10)
+    D = Node('D', 3, 0.5, 7)
+    E = Node('E', 4.5, 0.5, 35)
+    F = Node('F', 6, 0.5, 6)
+    G = Node('G', 1, 1, 4)
+    H = Node('H', 2.5, 0.8, 24)
+    I = Node('I', 3, 1.2, 11)
+    J = Node('J', 4, 1, 10)
 
     A.add_neighbor(B)
     A.add_neighbor(C)
@@ -88,8 +88,8 @@ example_spherical_coords = np.array(
 
 
 def main():
-    graph = build_graph_from_spherical_coords(example_spherical_coords)
-    # graph = get_example_graph()
+    # graph = build_graph_from_spherical_coords(example_spherical_coords)
+    graph = get_example_graph()
 
     # Find nodes with higher weights than neighbors
     result = find_local_maximum_nodes(graph)
@@ -101,7 +101,7 @@ def main():
     print(f'Graph size: {len(graph)}')
 
     # Generate the graph image
-    generate_graph_image(graph)
+    generate_graph_image_2d(graph, result)
 
 
 if __name__ == '__main__':
