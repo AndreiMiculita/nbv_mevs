@@ -15,7 +15,7 @@ import imageio
 
 def plot_graph_from_file(generate_gif=False):
     # Read the graph from file
-    G = nx.read_graphml("../entropy_views_10.graphml")
+    G = nx.read_graphml("../config/entropy_views_10_best.graphml")
 
     # Print the nodes and edges
     print(f"G.nodes: {G.nodes}")
