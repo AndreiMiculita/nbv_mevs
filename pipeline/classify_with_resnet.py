@@ -1,58 +1,65 @@
 # Script for taking the input image and classifying it with the ResNet-18 model
 
+import os
+
+import cv2
 import torch
 import torchvision
 import torchvision.transforms as transforms
-import numpy as np
-import random
-import cv2
-
-import pipeline.get_new_viewpoint
-from visualization import viewpoint_utils
 
 
-def main ():
+resnet_path = '../data/ckpt_files/resnet18_modelnet10.ckpt'
+image_path = '../data/image-dataset/bathtub/'
+
+
+def main():
     # ModelNet10 classes
     class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
-    # Path to the mesh
-    mesh_path = '../data/teapot.obj'
+    # Load model from ckpt file with load_from_checkpoint and set to eval mode
+    # Note that our model has 10 classes, so we need to change the last layer to have 10 outputs
+    model = torchvision.models.resnet18(pretrained=False)
+    model.fc = torch.nn.Linear(512, 10)
+    model.load_state_dict(torch.load(resnet_path))
+    model.eval()
 
-    confidence = 0
-    confidence_threshold = 0.5
+    images_list = os.listdir(image_path)
+    images_list.sort()
 
-    # Choose a random viewpoint
-    theta = random.random() * np.pi
-    phi = random.random() * 2 * np.pi - np.pi
+    total = len(images_list)
+    sofar = 0
+    correct = 0
 
-    attempted_viewpoints = []
-
-    while confidence < confidence_threshold:
-        # Render the mesh from a random viewpoint
-        image = viewpoint_utils.render_mesh(mesh_path, theta, phi)
+    for image in images_list:
+        print(f'Image: {image}')
+        # Retrieve the image
+        image = cv2.imread(image_path + image)
 
         # Prepare the image
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = cv2.resize(image, (224, 224))
         image = transforms.ToTensor()(image)
-
-        # Load model from ckpt file "resnet18-5c106cde.pth" and set to eval mode
-        model = torchvision.models.resnet18(pretrained=False)
-        model.load_state_dict(torch.load('resnet18-5c106cde.pth'))
-        model.eval()
 
         # Get the predictions
         predictions = model(image[None, ...])
         confidence = torch.max(predictions, dim=1).values
 
-        if confidence < confidence_threshold:
-            attempted_viewpoints.append([theta, phi])
-            # Choose a new viewpoint
-            theta, phi = pipeline.get_new_viewpoint.get_new_viewpoint(mesh_path, attempted_viewpoints)
-        else:
-            print(f'Predicted class: {class_names[torch.argmax(predictions, dim=1)]}')
-            print(f'Confidence: {confidence}, Viewpoint coordinates: ({theta}, {phi})')
-            print(f'Attempted {len(attempted_viewpoints)} viewpoints')
+        predicted_class = class_names[torch.argmax(predictions, dim=1)]
+
+        print(f'Predicted class: {predicted_class}')
+        print(f'Confidence: {confidence}')
+        # Print predictions, with the class names
+        for i in range(len(class_names)):
+            print(f'{class_names[i]}: {predictions[0][i]}')
+
+        if predicted_class == 'bathtub':
+            correct += 1
+
+        sofar += 1
+
+        print(f'Accuracy so far: {correct / sofar}')
+
+    print(f'Accuracy: {correct / total}')
+
 
 if __name__ == '__main__':
     main()
