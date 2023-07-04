@@ -2,6 +2,7 @@ import numpy as np
 from sympy import pi, sin, cos, sqrt, acos, atan2
 
 
+# credit https://stackoverflow.com/a/43893134/13200217
 def as_cartesian(rthetaphi):
     """
     Converts spherical coordinates to cartesian coordinates.
