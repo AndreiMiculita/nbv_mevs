@@ -1,4 +1,4 @@
-# Finding the next best view for object recognition
+# Finding the next best view for object recognition through Maximum Entropy Viewpoint Selection
 
 A collection of scripts related to my Master's thesis - a method for finding the most informative camera positions for multiview object recognition.
 
