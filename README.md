@@ -34,8 +34,8 @@ You can get it [here](https://modelnet.cs.princeton.edu/).
 You might need to prepend `PYTHONPATH=.` to the commands for the imports to work.
 
 ## Visualization
-The figures in the report can be generated using the scripts in the `visualization` dir.
-
+The figures in the thesis can be generated using the scripts in the `visualization` dir.
+The output will be saved in the `assets` dir.
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
