@@ -4,6 +4,3 @@
 [submodule "neural_renderer"]
 	path = neural_renderer
 	url = git@github.com:ZhengZerong/neural_renderer.git
-[submodule "DiffDVR"]
-	path = DiffDVR
-	url = git@github.com:shamanDevel/DiffDVR.git
