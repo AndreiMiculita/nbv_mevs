@@ -8,11 +8,15 @@ They are both implemented in PyTorch.
 There are some packages that can only be installed through `pip` and some that can only be installed through `conda`.
 I would have liked to use `conda` exclusively, but the `neural_renderer` is only on `PyPI`.
 
-* `conda create --name <env>`
-* `conda activate <env>`
-* `pip3 install --pre torch torchvision torchaudio -f https://download.pytorch.org/whl/nightly/cu111/torch_nightly.html` (some version that has the [entr](https://pytorch.org/docs/master/special.html) function)
-* `pip install -r requirements_pip.txt`
-* `conda install --file requirements.txt`
+```bash
+conda create --name nbv_mevs_env python=3.8
+conda activate nbv_mevs
+pip3 install --pre torch torchvision torchaudio -f https://download.pytorch.org/whl/nightly/cu111/torch_nightly.html
+pip install -r requirements_pip.txt
+conda install --file requirements.txt
+```
+
+For `torch`, the important part is to use some version that has the [entr](https://pytorch.org/docs/master/special.html) function.
 
 ## Usage
 The `classification_pipeline.py` script in the `pipeline` dir is the main script.
