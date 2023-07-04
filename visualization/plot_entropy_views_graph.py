@@ -1,36 +1,16 @@
-import math
 import networkx as nx
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from geometry_utils.convert_coords import as_cartesian, as_spherical
-from node_weighted_graph import build_graph_from_spherical_coords_with_delaunay
+from geometry_utils.fibonacci_sphere import fibonacci_sphere
 from node_weighted_graph.build_graph_from_spherical_coords import \
     build_graph_from_spherical_coords_with_nearest_neighbors
 from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 
 # credit: https://stackoverflow.com/a/26127012/13200217
-def fibonacci_sphere(samples=1000):
-    points = []
-    phi = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
-
-    for i in range(samples):
-        y = 1 - (i / float(samples - 1)) * 2  # y goes from 1 to -1
-        radius = math.sqrt(1 - y * y)  # radius at y
-
-        theta = phi * i  # golden angle increment
-
-        x = math.cos(theta) * radius
-        z = math.sin(theta) * radius
-
-        # Reorder so first points are on the sides
-        (x, y, z) = (y, x, z)
-
-        points.append((x, y, z))
-
-    return points
 
 
 def get_fibonacci_sphere_coords(n=10):

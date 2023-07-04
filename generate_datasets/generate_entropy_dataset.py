@@ -20,6 +20,7 @@ import open3d as o3d
 import cv2
 
 from geometry_utils.convert_coords import as_spherical
+from geometry_utils.fibonacci_sphere import fibonacci_sphere
 from utility import normalize3d
 import numpy as np
 import pandas as pd
@@ -60,28 +61,6 @@ N_VIEWS_W = args.horizontal_split
 N_VIEWS_H = args.vertical_split
 VIEW_INDEX = 0
 FIRST_OBJECT = 1
-
-
-# credit: https://stackoverflow.com/a/26127012/13200217
-def fibonacci_sphere(samples=1000):
-    points = []
-    phi = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
-
-    for i in range(samples):
-        y = 1 - (i / float(samples - 1)) * 2  # y goes from 1 to -1
-        radius = math.sqrt(1 - y * y)  # radius at y
-
-        theta = phi * i  # golden angle increment
-
-        x = math.cos(theta) * radius
-        z = math.sin(theta) * radius
-
-        # Reorder so first points are on the sides
-        (x, y, z) = (y, x, z)
-
-        points.append((x, y, z))
-
-    return points
 
 
 def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
