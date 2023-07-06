@@ -107,9 +107,9 @@ def get_best_views(pcd: o3d.geometry.PointCloud, n: int) -> list:
             # normalize and multiply by 16
             initial_camera_position /= np.linalg.norm(initial_camera_position)
             initial_camera_position *= 16
-            model = Model(mesh, "../data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_camera_position)
+            model = Model(mesh, "../data/references/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_camera_position)
         else:
-            model = Model(mesh, "../data/gaussian_reference.png", tqdm_loop=loop)
+            model = Model(mesh, "../data/references/gaussian_reference.png", tqdm_loop=loop)
 
         model.cuda()
 

@@ -104,7 +104,7 @@ def get_best_views(mesh, n: int) -> Tuple[list, list]:
         loop = tqdm.tqdm(range(1000))
 
         # Initialize the model
-        model = Model(mesh, "../data/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_view)
+        model = Model(mesh, "../data/references/gaussian_reference.png", tqdm_loop=loop, initial_camera_position=initial_view)
 
         model.cuda()
 
