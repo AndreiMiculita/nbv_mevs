@@ -1,10 +1,8 @@
 import random
-
-import numpy as np
-from open3d import *
+from typing import List
 
 
-def get_new_viewpoint(mesh, attempted_viewpoints, method="random"):
+def get_new_viewpoint_coords(mesh, attempted_viewpoints, possible_viewpoints: List, method="random"):
     """
     Chooses a new viewpoint for a mesh.
 
@@ -12,13 +10,14 @@ def get_new_viewpoint(mesh, attempted_viewpoints, method="random"):
         mesh : open3d.geometry.TriangleMesh
         attempted_viewpoints : List[float, float]
         method (str): Method for choosing a new viewpoint. Can be "random", "diff", or "pcd"
+        possible_viewpoints (int): Only for random method, what number of points to use for fibonacci sphere
 
     Returns a tuple of floats:
-        theta (float): Azimuthal angle;
-        phi (float): Polar angle
+        theta (float): Azimuthal angle; in radians
+        phi (float): Polar angle; in radians
     """
     if method == "random":
-        return random.random() * np.pi, random.random() * 2 * np.pi - np.pi
+        return random.choice(possible_viewpoints)
     elif method == "diff":
         return with_differentiable_renderer(mesh, attempted_viewpoints)
     elif method == "pcd":
