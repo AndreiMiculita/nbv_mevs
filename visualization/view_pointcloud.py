@@ -2,8 +2,7 @@ import open3d as o3d
 import numpy as np
 
 # read pcd file
-pcd = o3d.io.read_point_cloud(
-    "/home/andrei/PycharmProjects/diff_mv_rec/view-dataset1/pcd/bathtub_0005_theta_-57_phi_10313_vc_9.pcd")
+pcd = o3d.io.read_point_cloud("../data/view-dataset1/pcd/bathtub_0005_theta_-57_phi_10313_vc_9.pcd")
 
 print(type(pcd.points))
 
