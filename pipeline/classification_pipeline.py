@@ -49,38 +49,44 @@ def main(args=None):
     model.load_state_dict(torch.load(args.classification_model))
     model.eval()
 
-    while confidence < confidence_threshold:
-        # Retrieve the image, given the viewpoint
-        image = pipeline.get_captures.get_image(mesh_path, theta, phi)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # Prepare the image
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (224, 224))
-        image = transforms.ToTensor()(image)
+    with torch.no_grad():
+        model = model.to(device)
 
-        # Get the predictions
-        prediction_accumulator += model(image[None, ...]).detach().numpy()[0]
-        confidence = np.max(prediction_accumulator)
-        attempted_viewpoints.append([theta, phi])
+        while confidence < confidence_threshold:
+            # Retrieve the image, given the viewpoint
+            image = get_image(mesh_path, theta, phi)
 
-        if confidence < confidence_threshold:
-            print(f'Might be: {class_names[np.argmax(prediction_accumulator)]}')
-            # Choose a new viewpoint
-            print(f'\nConfidence too low ({confidence:.2f}), choosing new viewpoint, method: {args.method}')
-            theta, phi = pipeline.get_new_viewpoint.get_new_viewpoint_coords(mesh_path, attempted_viewpoints,
-                                                                             possible_viewpoints)
-            print(
-                f'New viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
-                f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees')
-        else:
-            print(f'\nDone! Predicted class: {class_names[np.argmax(prediction_accumulator)]}')
-            print(f'Confidence: {confidence:.2f}')
-            print(f'Attempted {len(attempted_viewpoints)} viewpoints')
-            # Softmax the accumulator
-            probabilities = torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator))
-            accumulator_dict = dict(zip(class_names, zip(prediction_accumulator, probabilities)))
-            print('Class      : Accumulated : Probability (softmaxed)')
-            print('\n'.join([f'{key.ljust(11)}: {value: 06.2f} : {prob: .3f}' for key, (value, prob) in accumulator_dict.items()]))
+            # Prepare the image
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = cv2.resize(image, (224, 224))
+            image = transforms.ToTensor()(image).to(device)
+
+            # Get the predictions
+            prediction_accumulator += model(image[None, ...]).cpu().numpy()[0]
+            confidence = np.max(prediction_accumulator)
+            attempted_viewpoints.append([theta, phi])
+
+            if confidence < confidence_threshold:
+                print(f'Might be: {class_names[np.argmax(prediction_accumulator)]}')
+                # Choose a new viewpoint
+                print(f'\nConfidence too low ({confidence:.2f}), choosing new viewpoint, method: {args.method}')
+                theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints)
+                print(
+                    f'New viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
+                    f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
+                )
+            else:
+                print(f'\nDone! Predicted class: {class_names[np.argmax(prediction_accumulator)]}')
+                print(f'Confidence: {confidence:.2f}')
+                print(f'Attempted {len(attempted_viewpoints)} viewpoints')
+                # Softmax the accumulator
+                probabilities = torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator))
+                accumulator_dict = dict(zip(class_names, zip(prediction_accumulator, probabilities)))
+                print('Class      : Accumulated : Probability (softmaxed)')
+                print('\n'.join([f'{key.ljust(11)}: {value: 06.2f} : {prob: .3f}' for key, (value, prob) in
+                                 accumulator_dict.items()]))
 
 
 if __name__ == '__main__':
