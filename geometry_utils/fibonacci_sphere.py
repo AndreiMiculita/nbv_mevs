@@ -1,8 +1,14 @@
 import math
+from typing import List, Tuple
 
 
-# credit: https://stackoverflow.com/a/26127012/13200217
-def fibonacci_sphere(samples=1000):
+def fibonacci_sphere(samples: int = 1000) -> List[Tuple[float, float, float]]:
+    """
+    Generate points on the unit sphere using the Fibonacci spiral method.
+    credit: https://stackoverflow.com/a/26127012/13200217
+    :param samples: Number of points to generate (default: 1000)
+    :return: coords: List of tuples: [(x1, y1, z1), (x2, y2, z2), ...]
+    """
     points = []
     phi = math.pi * (3. - math.sqrt(5.))  # golden angle in radians
 
