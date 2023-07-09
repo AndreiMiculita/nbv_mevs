@@ -1,6 +1,5 @@
-# Script for taking the input image and classifying it with the ResNet-18 model
-
 import argparse
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -8,19 +7,24 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 
-import pipeline.get_captures
-import pipeline.get_new_viewpoint
 from geometry_utils.convert_coords import as_spherical
 from geometry_utils.fibonacci_sphere import fibonacci_sphere
+from pipeline.get_captures import get_image
+from pipeline.get_new_viewpoint import get_new_viewpoint_coords
 
 
 def main(args=None):
+    """
+    Main function for taking the input image and classifying it based on multiple viewpoints.
+    """
+
     # ModelNet10 classes
     class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
     mesh_path = args.mesh_path
     confidence = 0
     confidence_threshold = args.confidence
+    method = args.method
 
     attempted_viewpoints = []
 
@@ -35,17 +39,16 @@ def main(args=None):
     prediction_accumulator = np.zeros(len(class_names))
 
     # Get a random viewpoint
-    theta, phi = pipeline.get_new_viewpoint.get_new_viewpoint_coords(mesh_path, attempted_viewpoints,
-                                                                     possible_viewpoints,
-                                                                     method=args.method)
+    theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints)
 
     print(
         f'Initial viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
-        f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees')
+        f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
+    )
 
     # Load model from ckpt file and set to eval mode, set outputs to size 10
     model = torchvision.models.resnet18(pretrained=False)
-    model.fc = torch.nn.Linear(512, 10)
+    model.fc = torch.nn.Linear(512, len(class_names))
     model.load_state_dict(torch.load(args.classification_model))
     model.eval()
 
@@ -71,8 +74,8 @@ def main(args=None):
             if confidence < confidence_threshold:
                 print(f'Might be: {class_names[np.argmax(prediction_accumulator)]}')
                 # Choose a new viewpoint
-                print(f'\nConfidence too low ({confidence:.2f}), choosing new viewpoint, method: {args.method}')
-                theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints)
+                print(f'\nConfidence too low ({confidence:.2f}), choosing new viewpoint, method: {method}')
+                theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints, method)
                 print(
                     f'New viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
                     f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
@@ -85,7 +88,7 @@ def main(args=None):
                 probabilities = torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator))
                 accumulator_dict = dict(zip(class_names, zip(prediction_accumulator, probabilities)))
                 print('Class      : Accumulated : Probability (softmaxed)')
-                print('\n'.join([f'{key.ljust(11)}: {value: 06.2f} : {prob: .3f}' for key, (value, prob) in
+                print('\n'.join([f'{key.ljust(11)}:      {value: 06.2f} : {prob:.3f}' for key, (value, prob) in
                                  accumulator_dict.items()]))
 
 
