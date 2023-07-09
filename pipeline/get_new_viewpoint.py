@@ -1,8 +1,11 @@
 import random
-from typing import List
+from pathlib import Path
+from typing import List, Tuple
 
 
-def get_new_viewpoint_coords(mesh, attempted_viewpoints, possible_viewpoints: List, method="random"):
+def get_new_viewpoint_coords(mesh_path: Path, attempted_viewpoints: List[Tuple[float, float]],
+                             possible_viewpoints: List[Tuple[float, float]], method: str = "random") \
+        -> Tuple[float, float]:
     """
     Chooses a new viewpoint for a mesh.
 
@@ -26,7 +29,7 @@ def get_new_viewpoint_coords(mesh, attempted_viewpoints, possible_viewpoints: Li
     raise ValueError("Invalid method: {}".format(method))
 
 
-def with_differentiable_renderer(mesh, attempted_viewpoints):
+def with_differentiable_renderer(mesh_path: Path, attempted_viewpoints: List[Tuple[float, float]]) -> Tuple[float, float]:
     """
     Chooses a new viewpoint for a mesh using differentiable rendering.
 
@@ -42,7 +45,8 @@ def with_differentiable_renderer(mesh, attempted_viewpoints):
     pass
 
 
-def with_point_cloud_embedding_network(mesh, attempted_viewpoints):
+def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: List[Tuple[float, float]]) -> Tuple[
+    float, float]:
     """
     Choose a new viewpoint for a mesh using point cloud embedding network.
 

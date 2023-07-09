@@ -21,7 +21,7 @@ def main(args=None):
     # ModelNet10 classes
     class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
-    mesh_path = args.mesh_path
+    mesh_path = Path(args.mesh_path)
     confidence = 0
     confidence_threshold = args.confidence
     method = args.method
