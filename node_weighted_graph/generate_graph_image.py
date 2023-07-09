@@ -10,8 +10,9 @@ def generate_graph_image_2d(graph: List[Node], identified_maxima = None):
     """
     Generate an image of the graph, with the nodes colored based on their weights.
     It will be a 2D image, with the x-axis being the longitude and the y-axis being the latitude.
-    :param graph:
-    :param identified_maxima:
+    Maxima will be circled in red if they are provided.
+    :param graph: the graph to be drawn
+    :param identified_maxima: the list of nodes that are identified as maxima
     :return:
     """
     G = nx.Graph()

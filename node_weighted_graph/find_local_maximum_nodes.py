@@ -2,6 +2,12 @@ import heapq
 
 
 def find_local_maximum_nodes(graph):
+    """
+    Given a node-weighted graph, find the nodes that have higher weights than all their neighbors.
+    :param graph: a list of Node objects
+    :return: a set of Node objects
+    """
+
     result = set()
     priority_queue = []
 

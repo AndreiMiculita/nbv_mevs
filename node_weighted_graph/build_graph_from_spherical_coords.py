@@ -52,7 +52,7 @@ def build_graph_from_spherical_coords_with_nearest_neighbors(vertices_spherical_
      based on the nearest neighbors.
     :param vertices_spherical_coords: (n, 2) or (n, 3) array of spherical coordinates (degrees)
     :param threshold: the maximum distance between two nodes to be considered neighbors
-    :return:
+    :return: the graph
     """
 
     vertices_lons: np.ndarray = np.radians(vertices_spherical_coords.T[0])
@@ -73,7 +73,8 @@ def build_graph_from_spherical_coords_with_nearest_neighbors(vertices_spherical_
                     weight=vertices_weights[i] if vertices_spherical_coords.shape[1] == 3 else None)
         graph.append(node)
 
-    # Find the nearest neighbors; note that the angles in node.lat and node.long are in radians and as_cartesian expects degrees
+    # Find the nearest neighbors; note that the angles in node.lat and node.long are in radians
+    # and as_cartesian expects degrees
     for i, node in enumerate(graph):
         for j, other_node in enumerate(graph):
             if i != j:
