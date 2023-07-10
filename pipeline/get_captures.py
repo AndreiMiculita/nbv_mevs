@@ -18,18 +18,23 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import open3d as o3d
 
 image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-dataset"
+point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "view-dataset"
 
 
-def get_image(mesh_path: Path, theta: float, phi: float):
+def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image"):
     """
     Get the image of the mesh at the specified theta and phi.
     :param mesh_path: The path to the mesh.
-    :param theta: angle in radians [0 - pi].
+    :param theta: angle in radians [0 - pi]
     :param phi: angle in radians [0 - 2pi]
+    :param capture_type: The type of capture to retrieve. Can be "image" or "pcd"
     :return: The image of the mesh at the specified theta and phi.
     """
+
+    dataset_path = image_dataset_path if capture_type == "image" else point_cloud_dataset_path
 
     # Get the class name from the mesh path
     class_name = mesh_path.stem.split("_")[0]
@@ -41,9 +46,11 @@ def get_image(mesh_path: Path, theta: float, phi: float):
     theta = round(np.degrees(theta))
     phi = round(np.degrees(phi))
 
-    file_path = image_dataset_path / class_name / f"{class_name}_{object_index}_theta_{theta}_phi_{phi}_vc_*.png"
+    file_path = dataset_path / class_name / \
+                f"{class_name}_{object_index}_theta_{theta}_phi_{phi}_vc_*." \
+                f"{'png' if capture_type == 'image' else 'pcd'}"
 
-    print(f'Retrieving captured image from {file_path}')
+    print(f'Retrieving captured {capture_type} from {file_path}')
 
     # Get the file that matches the class name, object index, theta, and phi
     files = list(file_path.parent.glob(file_path.name))
@@ -51,7 +58,13 @@ def get_image(mesh_path: Path, theta: float, phi: float):
         print("No file found. Has the dataset been created? Does the angle exist in the dataset?")
         return None
 
-    # Read the image
-    image = cv2.imread(str(files[0]))
+    if capture_type != "pcd":
+        # Read the image
+        image = cv2.imread(str(files[0]))
 
-    return image
+        return image
+    else:
+        # Read the point cloud
+        pcd = o3d.io.read_point_cloud(str(files[0]))
+
+        return pcd
