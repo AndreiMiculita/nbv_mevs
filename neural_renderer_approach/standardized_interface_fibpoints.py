@@ -196,7 +196,7 @@ if __name__ == "__main__":
         cv2.imwrite(f"view_{idx}.png", view_img)
 
     # print best views to file
-    with open("../data/best_views.txt", "w") as f:
+    with open("../data/neural_renderer_outputs/best_views.txt", "w") as f:
         for view, loss in zip(views, losses):
             f.write(f"{view.detach().cpu().numpy()} with loss {loss}\n")
 
