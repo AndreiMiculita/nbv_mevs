@@ -30,19 +30,9 @@ parser = argparse.ArgumentParser(description="Generates a dataset in CSV format 
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.", required=True)
 parser.add_argument("--out", help="Select a desired output directory.", default="./entropy-dataset4")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
-parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
-                                                     "splits so each viewpoint is at an angle of multiple of 360/x. "
-                                                     "Example: -x=12 --> phi=[0, 30, 60, 90, 120, ... , 330].",
-                    default=12,
-                    metavar='VALUE',
-                    type=int
-                    )
-parser.add_argument("-y", "--vertical_split", help="Number of horizontal rings. Each ring of viewpoints is an "
-                                                   "horizontal section of a sphere, looking at the center at an angle "
-                                                   "180/(y+1), skipping 0 and 180 degrees (since the diameter of the "
-                                                   "ring would be zero). Example: -y=5 --> theta=[30, 60, 90, 120, "
-                                                   "150] ; -y=11 --> theta=[15, 30, 45, ... , 150, 165]. ",
-                    default=5,
+parser.add_argument("-n", "--number_of_views", help="Number of views. These are generated using the Fibonacci "
+                                                    "sphere algorithm",
+                    default=10,
                     metavar='VALUE',
                     type=int
                     )
@@ -54,8 +44,7 @@ OUT_DIR = os.path.join(BASE_DIR, args.out)
 DATA_PATH = os.path.join(BASE_DIR, args.modelnet10)
 IMAGE_WIDTH = 224
 IMAGE_HEIGHT = 224
-N_VIEWS_W = args.horizontal_split
-N_VIEWS_H = args.vertical_split
+N_VIEWS = args.number_of_views
 VIEW_INDEX = 0
 FIRST_OBJECT = 1
 
@@ -128,7 +117,7 @@ for split_set in ['train', 'test']:
             if args.debug:
                 print(f"[DEBUG] Current Object: {file}")
 
-            initial_views = fibonacci_sphere(10)
+            initial_views = fibonacci_sphere(N_VIEWS)
 
             rotations = []
 
