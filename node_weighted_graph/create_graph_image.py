@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from node_weighted_graph import Node
 
 
-def generate_graph_image_2d(graph: List[Node], identified_maxima = None):
+def create_graph_image_2d(graph: List[Node], identified_maxima=None):
     """
     Generate an image of the graph, with the nodes colored based on their weights.
     It will be a 2D image, with the x-axis being the longitude and the y-axis being the latitude.
@@ -21,7 +21,7 @@ def generate_graph_image_2d(graph: List[Node], identified_maxima = None):
     # Add nodes with their attributes
     for node in graph:
         G.add_node(node.name, weight=node.weight)
-        node_pos[node.name] = (node.lon, node.lat)
+        node_pos[node.name] = (node.theta, node.phi)
         for neighbor in node.neighbors:
             G.add_edge(node.name, neighbor.name)
 
