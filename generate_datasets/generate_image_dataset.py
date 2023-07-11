@@ -170,7 +170,7 @@ for label in labels:
             nonblocking_custom_capture(mesh, rot, last_rotation)
             ViewData.view_index += 1
             if args.verbose:
-                print(f"[INFO] Elaborating view {ViewData.view_index}/{N_VIEWS_W * N_VIEWS_H}...")
+                print(f"[INFO] Elaborating view {ViewData.view_index}/{N_VIEWS}...")
             last_rotation = rot
 
         end = time()
