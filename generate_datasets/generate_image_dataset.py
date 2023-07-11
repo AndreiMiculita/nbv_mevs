@@ -9,7 +9,6 @@ spaced vertically on a sphere around the object.
 """
 
 import argparse
-import math
 import os
 import sys
 from time import time
@@ -83,7 +82,6 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
          specify the previous rot_xyz to reposition the object to thee original rotation before
          applying rot_xyz
     """
-
     vis = o3d.visualization.Visualizer()
     vis.create_window(width=IMAGE_WIDTH, height=IMAGE_HEIGHT, visible=False)
     vis.add_geometry(tr_mesh)
@@ -99,7 +97,7 @@ def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
     vis.poll_events()
     vis.update_renderer()
 
-    # Capture depth image
+    # Capture screen image
     vis.capture_screen_image(get_dataset_path())
 
     vis.destroy_window()

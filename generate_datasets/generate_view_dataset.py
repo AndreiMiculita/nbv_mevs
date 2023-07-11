@@ -9,7 +9,6 @@ spaced vertically on a sphere around the object.
 """
 
 import argparse
-import math
 import os
 import sys
 from time import time

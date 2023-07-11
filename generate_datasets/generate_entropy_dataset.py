@@ -11,23 +11,20 @@ This is an algorithm that allows the even distribution of an arbitrary number of
 The entropy values are stored in the entropy_dataset.csv file.
 """
 
-import os
-import sys
 import argparse
 import shutil
-from open3d import *
-import open3d as o3d
+
 import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import open3d as o3d
+import pandas as pd
+from open3d import *
+from skimage.measure import shannon_entropy
 
 from geometry_utils.convert_coords import as_spherical
 from geometry_utils.fibonacci_sphere import fibonacci_sphere
 from utility import normalize3d
-import numpy as np
-import pandas as pd
-from skimage.measure import shannon_entropy
-import matplotlib.pyplot as plt
-from sympy import pi, sin, cos, sqrt, acos, atan2
-import math
 
 parser = argparse.ArgumentParser(description="Generates a dataset in CSV format of depth-views entropy values.")
 parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.", required=True)
@@ -208,6 +205,5 @@ for split_set in ['train', 'test']:
 
             for im in os.listdir(TMP_DIR):
                 os.remove(os.path.join(TMP_DIR, im))
-
 
 os.rmdir(TMP_DIR)
