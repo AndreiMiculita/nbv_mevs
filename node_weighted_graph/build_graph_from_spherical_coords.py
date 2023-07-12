@@ -32,7 +32,17 @@ def build_graph_from_spherical_coords_with_delaunay(vertices_spherical_coords: n
     if vertices_spherical_coords.shape[1] == 3:
         vertices_weights: np.ndarray = vertices_spherical_coords.T[2]
 
-    spherical_triangulation = stripy.sTriangulation(lons=vertices_thetas, lats=vertices_phis, permute=True)
+    # Print them zipped, on new line each
+    print(*zip(vertices_thetas, vertices_phis, np.degrees(vertices_thetas), np.degrees(vertices_phis)), sep='\n')
+
+    # Our theta is between 0 and pi, and our phi is between 0 and 2pi;
+    # Stripy expects theta to be between -pi/2 and pi/2, and phi to be between 0 and 2pi
+    # Thus we need to decrease theta by pi/2
+    vertices_thetas_for_stripy = vertices_thetas - np.pi / 2
+
+    spherical_triangulation = stripy.sTriangulation(lats=vertices_thetas_for_stripy, lons=vertices_phis, permute=True)
+
+    print(f'Areas {spherical_triangulation.areas()}')
 
     # Build the graph
     graph: List[Node] = []

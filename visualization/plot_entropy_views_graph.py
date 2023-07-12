@@ -95,7 +95,7 @@ def plot_entropy_views_graph_in_3d(entropy_views: np.ndarray):
     """
 
     # The columns of entropy_views are: latitude, longitude, entropy
-    graph = build_graph_from_spherical_coords_with_nearest_neighbors(entropy_views)
+    graph = build_graph_from_spherical_coords_with_delaunay(entropy_views)
 
     print(f"graph: {graph}")
     for node in graph:
