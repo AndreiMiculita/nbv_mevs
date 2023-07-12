@@ -2,14 +2,14 @@ import argparse
 from pathlib import Path
 
 import cv2
+import networkx as nx
 import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
 
-from geometry_utils.convert_coords import as_spherical
-from geometry_utils.fibonacci_sphere import fibonacci_sphere
-from pipeline.get_captures import get_image
+from node_weighted_graph import Node
+from pipeline.get_captures import get_capture
 from pipeline.get_new_viewpoint import get_new_viewpoint_coords
 
 
@@ -28,18 +28,33 @@ def main(args=None):
 
     attempted_viewpoints = []
 
+    # Read the graph from the graphml file
+    possible_viewpoints_graph_nx = nx.read_graphml(args.possible_viewpoints_path)
+
+    # Example node: <node id="A: 90.0, 0.0"/>
     possible_viewpoints = []
-    for point in fibonacci_sphere(10):
-        [_, theta, phi] = as_spherical(list(point))
-        theta -= np.pi
-        theta = -theta
-        phi += np.pi
+    for node in possible_viewpoints_graph_nx.nodes(data=True):
+        theta, phi = float(node[1]['theta']), float(node[1]['phi'])
         possible_viewpoints.append((theta, phi))
+
+    # Convert to our custom Node class
+    possible_viewpoints_graph = []
+    for i, (theta, phi) in enumerate(possible_viewpoints):
+        node = Node(str(i), np.radians(theta), np.radians(phi), 0)
+        possible_viewpoints_graph.append(node)
+
+    # Copy the edges as well, with Node.add_neighbor(); we use the neighbor's name to find it in the graph
+    for i, node in enumerate(possible_viewpoints_graph_nx.nodes):
+        for neighbor in possible_viewpoints_graph_nx.neighbors(node):
+            # Find neighbor's index in graph nx
+            neighbor_index = list(possible_viewpoints_graph_nx.nodes).index(neighbor)
+            # Add neighbor to the node
+            possible_viewpoints_graph[i].add_neighbor(possible_viewpoints_graph[neighbor_index])
 
     prediction_accumulator = np.zeros(len(class_names))
 
     # Get a random viewpoint
-    theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints)
+    theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints_graph)
 
     print(
         f'Initial viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
@@ -58,8 +73,13 @@ def main(args=None):
         model = model.to(device)
 
         while confidence < confidence_threshold:
+            print(f'\nAttempting viewpoint: ({theta:.2f}, {phi:.2f}) radians ')
             # Retrieve the image, given the viewpoint
-            image = get_image(mesh_path, theta, phi)
+            image = get_capture(mesh_path, theta, phi)
+
+            if image is None:
+                print('Could not retrieve image, exiting...')
+                exit(1)
 
             # Prepare the image
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -69,13 +89,16 @@ def main(args=None):
             # Get the predictions
             prediction_accumulator += model(image[None, ...]).cpu().numpy()[0]
             confidence = np.max(prediction_accumulator)
-            attempted_viewpoints.append([theta, phi])
+            attempted_viewpoints.append((theta, phi))
 
             if confidence < confidence_threshold:
                 print(f'Might be: {class_names[np.argmax(prediction_accumulator)]}')
                 # Choose a new viewpoint
                 print(f'\nConfidence too low ({confidence:.2f}), choosing new viewpoint, method: {method}')
-                theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints, method)
+                theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints_graph,
+                                                      method,
+                                                      pcd_model_path=Path(
+                                                          args.pcd_entropy_prediction_model) if method == 'pcd' else None)
                 print(
                     f'New viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
                     f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
@@ -100,12 +123,13 @@ if __name__ == '__main__':
     parser.add_argument('--classification_model', type=str,
                         default='../data/ckpt_files/resnet18_modelnet10.ckpt',
                         help='Path to the classification model checkpoint')
-    parser.add_argument('--entropy_prediction_model', type=str,
+    parser.add_argument('--pcd_entropy_prediction_model', type=str,
                         default='../data/ckpt_files/06186690-epoch=34-val_loss=0.01.ckpt',
                         help='Path to the entropy prediction model checkpoint (pointnet)')
     parser.add_argument('--differential_rendering_model', type=str)
+    parser.add_argument('--possible_viewpoints_path', type=str, default='../config/entropy_views_10_better.graphml')
     parser.add_argument('--confidence', metavar='confidence', type=float, default=20, help='Confidence threshold')
-    parser.add_argument('--method', metavar='method', type=str, default='random',
+    parser.add_argument('--method', metavar='method', type=str, default='pcd',
                         help='Method for choosing the next viewpoint, choose from: random, diff, pcd')
     args = parser.parse_args()
     main(args)

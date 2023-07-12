@@ -5,8 +5,7 @@ from matplotlib import pyplot as plt
 
 from geometry_utils.convert_coords import as_cartesian, as_spherical
 from geometry_utils.fibonacci_sphere import fibonacci_sphere
-from node_weighted_graph.build_graph_from_spherical_coords import \
-    build_graph_from_spherical_coords_with_nearest_neighbors
+from node_weighted_graph.build_graph_from_spherical_coords import *
 from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
 
 
@@ -22,9 +21,19 @@ def get_fibonacci_sphere_coords(n=10):
     for i in range(len(some_fibonacci_sphere)):
         some_fibonacci_sphere[i] = as_spherical(some_fibonacci_sphere[i])
 
+    # Format is (radius, theta, phi)
     print(some_fibonacci_sphere)
+
     # Discard 1st column (radius)
-    some_fibonacci_sphere = np.degrees(some_fibonacci_sphere[:, 1:])
+    some_fibonacci_sphere = some_fibonacci_sphere[:, 1:]
+
+    # Decrease thetas by pi, negate thetas, and increase phis by pi
+    some_fibonacci_sphere[:, 0] -= np.pi
+    some_fibonacci_sphere[:, 0] *= -1
+    some_fibonacci_sphere[:, 1] += np.pi
+
+    # Convert to degrees
+    some_fibonacci_sphere = np.degrees(some_fibonacci_sphere)
 
     print(some_fibonacci_sphere)
 
@@ -73,7 +82,6 @@ def get_example_entropy_views():
         [134.0, 165.0, 1.0594529581594274],
         [67.0, 291.0, 2.1547943330628225],
         [88.0, 18.0, 1.1505704574550892],
-
     ])
 
 
@@ -91,15 +99,16 @@ def plot_entropy_views_graph_in_3d(entropy_views: np.ndarray):
 
     print(f"graph: {graph}")
     for node in graph:
-        print(f"node: {node}, x: {node.lon}, y: {node.lat}, weight: {node.weight}")
+        print(f"node: {node}, theta: {node.theta}, phi: {node.phi}, weight: {node.weight}")
 
-    # Convert to a networkx graph
+    # Convert to a networkx graph, so we can save it to a file
+    # Note that the theta and phi are converted to degrees to make the file more readable
     G = nx.Graph()
     # Add nodes with their attributes
     for node in graph:
-        G.add_node(node.name)
+        G.add_node(node.name.split(':')[0], theta=np.degrees(node.theta), phi=np.degrees(node.phi), weight=node.weight)
         for neighbor in node.neighbors:
-            G.add_edge(node.name, neighbor.name)
+            G.add_edge(node.name.split(':')[0], neighbor.name.split(':')[0])
 
     print(f"G.nodes: {G.nodes}")
     print(f"G.edges: {G.edges}")
@@ -112,7 +121,7 @@ def plot_entropy_views_graph_in_3d(entropy_views: np.ndarray):
     nx.write_graphml(G, f'entropy_views_{entropy_views.shape[0]}.graphml')
 
     # Convert the coords from spherical to cartesian, assume a unit sphere
-    nodes_coords = np.array([as_cartesian([1, np.degrees(node.lon), np.degrees(node.lat)]) for node in graph])
+    nodes_coords = np.array([as_cartesian([1, np.degrees(node.theta), np.degrees(node.phi)]) for node in graph])
 
     print(f"nodes_coords: {nodes_coords}")
     print(f"nodes_coords.shape: {nodes_coords.shape}")
@@ -120,15 +129,22 @@ def plot_entropy_views_graph_in_3d(entropy_views: np.ndarray):
     # Color based on weight
     nodes_weights = np.array([node.weight for node in graph])
 
+    print(f"nodes_weights: {nodes_weights}")
+
     # Plot the nodes as a 3D scatter plot
     ax = plt.axes(projection="3d")
-    ax.scatter3D(nodes_coords[:, 0], nodes_coords[:, 1], nodes_coords[:, 2], s=100, c=nodes_weights)
+    sc = ax.scatter3D(nodes_coords[:, 0], nodes_coords[:, 1], nodes_coords[:, 2], s=100, c=nodes_weights)
+
+    # Show coords and weights as labels
+    for i, node in enumerate(graph):
+        ax.text(nodes_coords[i, 0], nodes_coords[i, 1], nodes_coords[i, 2],
+                f"  {i}: {np.degrees(node.theta):.2f}, {np.degrees(node.phi):.2f}, {node.weight:.2f}")
 
     # Plot the edges as a 3D line plot
     for node in graph:
         for neighbor in node.neighbors:
-            node_coords = as_cartesian([1, np.degrees(node.lon), np.degrees(node.lat)])
-            neighbor_coords = as_cartesian([1, np.degrees(neighbor.x), np.degrees(neighbor.y)])
+            node_coords = as_cartesian([1, np.degrees(node.theta), np.degrees(node.phi)])
+            neighbor_coords = as_cartesian([1, np.degrees(neighbor.theta), np.degrees(neighbor.phi)])
             ax.plot3D([node_coords[0], neighbor_coords[0]], [node_coords[1], neighbor_coords[1]],
                       [node_coords[2], neighbor_coords[2]], 'gray')
 
@@ -146,6 +162,9 @@ def main():
 
     # Load the entropy views (normally from csv)
     entropy_views = get_fibonacci_sphere_coords(10)
+
+    # Add 3rd column with entropies (random uniform for now)
+    entropy_views = np.hstack((entropy_views, np.random.uniform(0, 1, (entropy_views.shape[0], 1))))
 
     # Plot the entropy views graph in 3D
     plot_entropy_views_graph_in_3d(entropy_views)

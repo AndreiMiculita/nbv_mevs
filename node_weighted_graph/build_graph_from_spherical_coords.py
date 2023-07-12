@@ -1,10 +1,16 @@
 """Given a list of spherical coordinates, build a graph with the nodes, based on the triangulation of the sphere."""
 from typing import List
 
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
-import stripy as stripy
+
+try:
+    import cartopy.crs as ccrs
+    import stripy as stripy
+except ImportError:
+    print("Cartopy or stripy not installed; "
+          "if you want to use them, make another environment, as they have conflicting dependencies.")
+    exit(1)
 
 from node_weighted_graph import Node
 from geometry_utils.convert_coords import as_cartesian
@@ -12,7 +18,7 @@ from geometry_utils.convert_coords import as_cartesian
 
 def build_graph_from_spherical_coords_with_delaunay(vertices_spherical_coords: np.ndarray) -> List[Node]:
     """
-    Given a list of spherical coordinates (degrees), build a graph with the nodes,
+    Given a 2d array of spherical coordinates (degrees), build a graph with the nodes,
      based on the triangulation of the sphere.
     The shape of the input array is (n, 2) or (n, 3), where n is the number of vertices.
     The first column is the longitude, the second is the latitude, and the third is the (optional) weight.
@@ -20,20 +26,20 @@ def build_graph_from_spherical_coords_with_delaunay(vertices_spherical_coords: n
     :return:
     """
 
-    vertices_lons: np.ndarray = np.radians(vertices_spherical_coords.T[0])
-    vertices_lats: np.ndarray = np.radians(vertices_spherical_coords.T[1])
+    vertices_thetas: np.ndarray = np.radians(vertices_spherical_coords.T[0])
+    vertices_phis: np.ndarray = np.radians(vertices_spherical_coords.T[1])
     # if there is a third column, it is the weight
     if vertices_spherical_coords.shape[1] == 3:
         vertices_weights: np.ndarray = vertices_spherical_coords.T[2]
 
-    spherical_triangulation = stripy.sTriangulation(lons=vertices_lons, lats=vertices_lats, permute=True)
+    spherical_triangulation = stripy.sTriangulation(lons=vertices_thetas, lats=vertices_phis, permute=True)
 
     # Build the graph
     graph: List[Node] = []
-    for i in range(spherical_triangulation.npoints):
-        node = Node(name=f'{vertices_spherical_coords.T[0][i]}, {vertices_spherical_coords.T[1][i]}',
-                    lon=spherical_triangulation.lons[i],
-                    lat=spherical_triangulation.lats[i],
+    for i in range(vertices_spherical_coords.shape[0]):
+        node = Node(name=f'{i}: {vertices_spherical_coords.T[0][i]}, {vertices_spherical_coords.T[1][i]}',
+                    theta=vertices_thetas[i],
+                    phi=vertices_phis[i],
                     weight=vertices_weights[i] if vertices_spherical_coords.shape[1] == 3 else None)
         graph.append(node)
 
@@ -61,15 +67,12 @@ def build_graph_from_spherical_coords_with_nearest_neighbors(vertices_spherical_
     if vertices_spherical_coords.shape[1] == 3:
         vertices_weights: np.ndarray = vertices_spherical_coords.T[2]
 
-    # names are letters from the alphabet
-    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
     # Build the graph
     graph: List[Node] = []
     for i in range(vertices_spherical_coords.shape[0]):
-        node = Node(name=f'{alphabet[i]}: {vertices_spherical_coords.T[0][i]}, {vertices_spherical_coords.T[1][i]}',
-                    lon=vertices_lons[i],
-                    lat=vertices_lats[i],
+        node = Node(name=f'{i}: {vertices_spherical_coords.T[0][i]}, {vertices_spherical_coords.T[1][i]}',
+                    theta=vertices_lons[i],
+                    phi=vertices_lats[i],
                     weight=vertices_weights[i] if vertices_spherical_coords.shape[1] == 3 else None)
         graph.append(node)
 
@@ -78,8 +81,12 @@ def build_graph_from_spherical_coords_with_nearest_neighbors(vertices_spherical_
     for i, node in enumerate(graph):
         for j, other_node in enumerate(graph):
             if i != j:
-                node_coords = np.array(as_cartesian([1, np.degrees(node.lat), np.degrees(node.lon)]))
-                other_node_coords = np.array(as_cartesian([1, np.degrees(other_node.lat), np.degrees(other_node.lon)]))
+                node_coords = np.array(
+                    as_cartesian([1, np.degrees(node.phi), np.degrees(node.theta)])
+                )
+                other_node_coords = np.array(
+                    as_cartesian([1, np.degrees(other_node.phi), np.degrees(other_node.theta)])
+                )
                 distance = np.linalg.norm(node_coords - other_node_coords)
                 print(f'Distance between {node.name} - {other_node.name}: {distance}')
                 print(f'Coords of {node.name}: {node_coords}')

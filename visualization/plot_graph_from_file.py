@@ -15,20 +15,22 @@ import imageio
 
 def plot_graph_from_file(generate_gif=False):
     # Read the graph from file
-    G = nx.read_graphml("../config/entropy_views_10_best.graphml")
+    G = nx.read_graphml("config/entropy_views_10_better.graphml")
 
     # Print the nodes and edges
     print(f"G.nodes: {G.nodes}")
     print(f"G.edges: {G.edges}")
 
     # Convert the nodes' coordinates from spherical to cartesian
-    for node in G.nodes:
-        node_name = node.split(":")[0]
-        node_coords = node.split(":")[1].split(",")
-        [theta, phi] = [float(coord) for coord in node_coords]
+    # get the attributes for each node
+    for i, node in enumerate(G.nodes(data=True)):
+        node_name = node[0]
+        theta, phi = float(node[1]['theta']), float(node[1]['phi'])
         node_coords = as_cartesian([1, theta, phi])
-        G.nodes[node]["name"] = node_name
-        G.nodes[node]["coords"] = node_coords
+        nx.set_node_attributes(G, {node_name: {'name': node_name, 'coords': node_coords}})
+
+    for i, node in enumerate(G.nodes(data=True)):
+        print(f"node: {node}, i: {i}")
 
     # Plot the graph
     fig = plt.figure()
@@ -76,17 +78,17 @@ def plot_graph_from_file(generate_gif=False):
             plt.pause(.001)
 
             # Save the image
-            plt.savefig(f"../assets/entropy_views_100_{angle}.png")
+            plt.savefig(f'../assets/entropy_views_{len(G.nodes)}_{angle}.png')
 
         # Make the gif
         images = []
         for angle in range(0, 360):
-            images.append(imageio.imread(f"../assets/entropy_views_100_{angle}.png"))
+            images.append(imageio.imread(f'../assets/entropy_views_{len(G.nodes)}_{angle}.png'))
 
-        imageio.mimsave('../assets/entropy_views_100.gif', images, fps=20)
+        imageio.mimsave(f'../assets/entropy_views_{len(G.nodes)}.gif', images, fps=20)
 
     else:
-        # Show the plot
+        # Show the plot, square
         plt.show()
 
 

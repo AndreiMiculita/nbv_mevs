@@ -8,7 +8,7 @@ import numpy as np
 
 # from node_weighted_graph import build_graph_from_spherical_coords
 from node_weighted_graph import find_local_maximum_nodes
-from node_weighted_graph import create_graph_image
+from node_weighted_graph import create_graph_image_2d
 from node_weighted_graph import Node
 
 
@@ -101,7 +101,7 @@ def main():
     print(f'Graph size: {len(graph)}')
 
     # Generate the graph image
-    create_graph_image(graph, result)
+    create_graph_image_2d(graph, result)
 
 
 if __name__ == '__main__':
