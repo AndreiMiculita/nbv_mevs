@@ -85,7 +85,7 @@ def plot_graph_from_file(generate_gif=False):
         for angle in range(0, 360):
             images.append(imageio.imread(f'../assets/entropy_views_{len(G.nodes)}_{angle}.png'))
 
-        imageio.mimsave(f'../assets/entropy_views_{len(G.nodes)}.gif', images, fps=20)
+        imageio.mimsave(f'assets/entropy_views_{len(G.nodes)}.gif', images, duration=50)
 
     else:
         # Show the plot, square
