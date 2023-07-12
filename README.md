@@ -26,6 +26,7 @@ They are both implemented in PyTorch.
 You might need a separate conda environment for the method based on point clouds, since it was developed in a different version of PyTorch. 
 For that, check out the `am/thesis` branch on my fork of [PointNet2_PyTorch](https://github.com/AndreiMiculita/Pointnet2_PyTorch/tree/am/thesis).
 The pipeline script (below) will work on either environment.
+The graph triangulation script `build_graph_from_spherical_coords` (which uses `stripy`) might also need a separate environment.
 
 ## Usage 🧑‍💻
 The main script is `classification_pipeline` in the `pipeline` directory.
