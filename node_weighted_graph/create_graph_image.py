@@ -21,7 +21,7 @@ def create_graph_image_2d(graph: List[Node], identified_maxima=None):
     # Add nodes with their attributes
     for node in graph:
         G.add_node(node.name, weight=node.weight)
-        node_pos[node.name] = (node.theta, node.phi)
+        node_pos[node.name] = (node.phi, node.theta)
         for neighbor in node.neighbors:
             G.add_edge(node.name, neighbor.name)
 
@@ -55,11 +55,16 @@ def create_graph_image_2d(graph: List[Node], identified_maxima=None):
     plt.colorbar(nx.draw_networkx_nodes(G, pos=node_pos, node_color=node_colors, edgecolors='black', cmap='plasma',
                                         node_size=500))
 
+    # Set ratio equal
+    plt.axis('equal')
+
     # A bit more space to the top and bottom
     plt.ylim(-0.2, 1.4)
 
     # Tight layout
     plt.tight_layout()
+
+    plt.savefig("assets/fibonacci_sphere_vertices/fibonacci_sphere_graph.pdf", bbox_inches='tight')
 
     # Display the image
     plt.show()
