@@ -45,6 +45,9 @@ python3 generate_datasets/generate_view_dataset.py --help
 Note that you need ModelNet40 downloaded and extracted, (`classification_pipeline` assumes in `~/datasets/ModelNet40`).
 You can get it [here](https://modelnet.cs.princeton.edu/).
 
+When training, caching is used (with `lmdb`) to speed up loading data.
+However, the cache database files can get quite large (in my experience, 9 times the size of the dataset), so make sure you have plenty of disk space.
+
 You might need to prepend `PYTHONPATH=.` to the commands for the imports to work.
 
 ## Visualization 📊
