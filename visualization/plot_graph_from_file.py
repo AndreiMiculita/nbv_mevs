@@ -4,18 +4,21 @@ The nodes' coordinates are their id's in the format (theta, phi) in spherical co
 These can be converted to cartesian coordinates, and then plotted in 3D.
 The edges are the connections between the nodes.
 """
+from pathlib import Path
 
-import networkx as nx
-import matplotlib.pyplot as plt
-from geometry_utils.convert_coords import as_cartesian
-from visualization.plotting_utils import set_axes_equal, show_3d_axes_rgb
-import numpy as np
 import imageio
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+from matplotlib import colors
+
+from geometry_utils.convert_coords import as_cartesian
+from visualization.plotting_utils import set_axes_equal
 
 
-def plot_graph_from_file(generate_gif=False):
+def plot_graph_from_file(generate_gif=True):
     # Read the graph from file
-    G = nx.read_graphml("config/entropy_views_10_better.graphml")
+    G = nx.read_graphml("../config/entropy_views_40.graphml")
 
     # Print the nodes and edges
     print(f"G.nodes: {G.nodes}")
@@ -44,10 +47,58 @@ def plot_graph_from_file(generate_gif=False):
     # z = radius * np.cos(v)
     # ax.plot_surface(x, y, z, color='g')
 
+    # Colors for weights, use cmap='jet' for a gradient
+    entropies = {
+        0: 0.961198,
+        1: 2.421217,
+        2: 2.322561,
+        3: 2.959751,
+        4: 1.478724,
+        5: 3.342597,
+        6: 2.309064,
+        7: 2.073726,
+        8: 3.252601,
+        9: 1.791614,
+        10: 2.895416,
+        11: 2.141816,
+        12: 1.662782,
+        13: 3.284952,
+        14: 2.833258,
+        15: 2.094056,
+        16: 3.661451,
+        17: 1.618091,
+        18: 3.757386,
+        19: 2.681031,
+        20: 2.292247,
+        21: 2.961708,
+        22: 2.648077,
+        23: 2.926976,
+        24: 3.462798,
+        25: 1.836550,
+        26: 3.789309,
+        27: 2.595079,
+        28: 1.224292,
+        29: 3.046702,
+        30: 2.016478,
+        31: 3.525395,
+        32: 2.715482,
+        33: 2.041915,
+        34: 2.549485,
+        35: 2.662680,
+        36: 1.972868,
+        37: 2.680763,
+        38: 1.825287,
+        39: 0.941295,
+    }
+
+    cmap = plt.cm.get_cmap('jet', 10)
+    normalize = colors.Normalize(vmin=0, vmax=6)
+
     # Plot the nodes
     node_coords = [G.nodes[node]["coords"] for node in G.nodes]
     node_coords = np.array(node_coords)
-    ax.scatter(node_coords[:, 0], node_coords[:, 1], node_coords[:, 2])
+    ax.scatter(node_coords[:, 0], node_coords[:, 1], node_coords[:, 2], c=list(entropies.values()), cmap=cmap,
+               norm=normalize)
 
     # show the names under the nodes
     for node in G.nodes:

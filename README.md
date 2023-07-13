@@ -51,5 +51,7 @@ You might need to prepend `PYTHONPATH=.` to the commands for the imports to work
 The figures in the thesis can be generated using the scripts in the `visualization` directory.
 The output will be saved in the `assets` directory.
 
+![](assets/entropy_views_40_animated.gif)
+
 ## License
 [MIT License](https://choosealicense.com/licenses/mit/)
