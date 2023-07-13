@@ -123,20 +123,23 @@ def plot_graph_from_file(generate_gif=True):
 
     # We do a 360-degree rotation of the plot, and generate a gif of it
     if generate_gif:
+        # create temp dir for frames
+        Path("../assets/temp").mkdir(parents=True, exist_ok=True)
+
         for angle in range(0, 360):
             ax.view_init(30, angle)
             plt.draw()
             plt.pause(.001)
 
             # Save the image
-            plt.savefig(f'../assets/entropy_views_{len(G.nodes)}_{angle}.png')
+            plt.savefig(f'../assets/temp/entropy_views_{len(G.nodes)}_{angle}.png')
 
         # Make the gif
         images = []
         for angle in range(0, 360):
-            images.append(imageio.imread(f'../assets/entropy_views_{len(G.nodes)}_{angle}.png'))
+            images.append(imageio.imread(f'../assets/temp/entropy_views_{len(G.nodes)}_{angle}.png'))
 
-        imageio.mimsave(f'assets/entropy_views_{len(G.nodes)}.gif', images, duration=50)
+        imageio.mimsave(f'../assets/entropy_views_{len(G.nodes)}.gif', images, duration=50)
 
     else:
         # Show the plot, square
