@@ -86,7 +86,7 @@ def main(
     with torch.no_grad():
         model = model.to(device)
 
-        while confidence < confidence_threshold:
+        while confidence < confidence_threshold and len(attempted_viewpoints) < max_attempts:
             print(f'\nAttempting viewpoint: ({theta:.2f}, {phi:.2f}) radians ')
             # Retrieve the image, given the viewpoint
             image = get_capture(mesh_path, theta, phi)
@@ -102,7 +102,7 @@ def main(
 
             # Get the predictions
             prediction_accumulator += model(image[None, ...]).cpu().numpy()[0]
-            confidence = np.max(prediction_accumulator)
+            confidence = np.max(torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator)).cpu().numpy())
             attempted_viewpoints.append((theta, phi))
 
             if confidence < confidence_threshold:
@@ -118,7 +118,7 @@ def main(
                 )
             else:
                 print(f'\nDone! Predicted class: {class_names[np.argmax(prediction_accumulator)]}')
-                print(f'Confidence: {confidence:.2f}')
+                print(f'Confidence: {confidence:.5f}')
                 print(f'Attempted {len(attempted_viewpoints)} viewpoints')
                 # Softmax the accumulator
                 probabilities = torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator))
@@ -126,6 +126,8 @@ def main(
                 print('Class      : Accumulated : Probability (softmaxed)')
                 print('\n'.join([f'{key.ljust(11)}:      {value: 06.2f} : {prob:.3f}' for key, (value, prob) in
                                  accumulator_dict.items()]))
+
+    return np.argmax(prediction_accumulator), confidence, attempted_viewpoints
 
 
 if __name__ == '__main__':
@@ -141,7 +143,7 @@ if __name__ == '__main__':
                         help='Path to the entropy prediction model checkpoint (pointnet)')
     parser.add_argument('--differentiable_rendering_model', type=str, default='/')  # TODO
     parser.add_argument('--possible_viewpoints_path', type=str, default='../config/entropy_views_10_better.graphml')
-    parser.add_argument('--confidence', metavar='confidence', type=float, default=20, help='Confidence threshold')
+    parser.add_argument('--confidence', metavar='confidence', type=float, default=0.99, help='Confidence threshold')
     parser.add_argument('--method', metavar='method', type=str, default='pcd',
                         help='Method for choosing the next viewpoint, choose from: random, diff, pcd')
     args = parser.parse_args()
