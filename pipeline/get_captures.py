@@ -39,10 +39,10 @@ def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image")
     dataset_path = image_dataset_path if capture_type == "image" else point_cloud_dataset_path
 
     # Get the class name from the mesh path
-    class_name = mesh_path.stem.split("_")[0]
+    class_name = mesh_path.parent.parent.stem
 
     # Get the object index from the mesh path
-    object_index = mesh_path.stem.split("_")[1]
+    object_index = mesh_path.stem.split("_")[-1]
 
     # Convert from radians to degrees
     theta = round(np.degrees(theta))
