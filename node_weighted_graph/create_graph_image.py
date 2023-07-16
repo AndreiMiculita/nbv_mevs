@@ -31,9 +31,17 @@ def create_graph_image_2d(graph: List[Node], identified_maxima=None):
     # Set node colors based on their weights
     node_colors = [n[1] for n in G.nodes.data('weight')]
 
-    # Draw the graph with specified node positions
-    nx.draw_networkx(G, pos=node_pos, with_labels=False, node_color=node_colors, edgecolors='black', cmap='plasma',
-                     node_size=500)
+    cmap = plt.cm.get_cmap('jet')
+
+    # Draw the graph with specified node positions; use entropies as node colors
+    nx.draw_networkx(G, pos=node_pos, with_labels=False, edgecolors='black', cmap=cmap, node_color=node_colors,
+                     node_size=200, vmin=0, vmax=1)
+
+    # Set y label to theta, x label to phi
+    plt.ylabel('theta')
+    plt.xlabel('phi')
+    # Make window less tall
+    plt.gcf().set_size_inches(6, 3)
 
     # Add identified maxima, circle them in red
     if identified_maxima is not None:
@@ -52,14 +60,11 @@ def create_graph_image_2d(graph: List[Node], identified_maxima=None):
     nx.draw_networkx_labels(G, pos=name_pos, labels=node_names)
 
     # Add legend
-    plt.colorbar(nx.draw_networkx_nodes(G, pos=node_pos, node_color=node_colors, edgecolors='black', cmap='plasma',
-                                        node_size=500))
+    cb = plt.colorbar(nx.draw_networkx_nodes(G, pos=node_pos, node_color=node_colors, edgecolors='black',
+                                         node_size=200, vmin=0, vmax=1))
 
     # Set ratio equal
     plt.axis('equal')
-
-    # A bit more space to the top and bottom
-    plt.ylim(-0.2, 1.4)
 
     # Tight layout
     plt.tight_layout()
