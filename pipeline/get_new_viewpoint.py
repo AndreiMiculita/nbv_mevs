@@ -1,3 +1,4 @@
+import copy
 import random
 from pathlib import Path
 from typing import List, Tuple
@@ -91,10 +92,10 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
               f'\n\ttheta: {node.theta}'
               f'\n\tphi: {node.phi}'
               f'\n\tweight: {node.weight}'
-              f'\n\tneighbors: {node.neighbors}')
+              f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
 
     # Find local maxima in view graph, sort them by entropy
-    local_maxima = list(find_local_maximum_nodes(possible_viewpoints_graph))
+    local_maxima = list(find_local_maximum_nodes(copy.deepcopy(possible_viewpoints_graph)))
     local_maxima.sort(key=lambda x: x.weight, reverse=True)
 
     # Pick the highest entropy view; if already attempted, pick next one and so on; return it
