@@ -9,17 +9,21 @@ from node_weighted_graph import Node
 from pipeline.get_captures import get_capture
 
 
-def get_new_viewpoint_coords(mesh_path: Path, attempted_viewpoints: List[Tuple[float, float]],
-                             possible_viewpoints_graph: List[Node], method: str = "random",
-                             pcd_model_path: Path = None) \
+def get_new_viewpoint_coords(mesh_path: Path,
+                             attempted_viewpoints: List[Tuple[float, float]],
+                             possible_viewpoints_graph: List[Node],
+                             method: str = "random",
+                             pcd_model_path: Path = None,
+                             differentiable_rendering_model: Path = None) \
         -> Tuple[float, float]:
     """
     Chooses a next best viewpoint for recognizing an object from a mesh.
     :param mesh_path: The path to the mesh.
     :param attempted_viewpoints: List of attempted viewpoints, in (theta, phi) format
+    :param method: Method for choosing a new viewpoint. Can be "random", "diff", or "pcd"
     :param possible_viewpoints_graph: The possible viewpoints, with neighbors
     :param pcd_model_path: Path to the point cloud embedding network model
-    :param method: Method for choosing a new viewpoint. Can be "random", "diff", or "pcd"
+    :param differentiable_rendering_model: Path to the differentiable rendering model
 
     :return: Tuple of floats: (theta, phi)
      theta: angle in radians [0 - pi]
@@ -30,7 +34,7 @@ def get_new_viewpoint_coords(mesh_path: Path, attempted_viewpoints: List[Tuple[f
         random_node = random.choice(possible_viewpoints_graph)
         return random_node.theta, random_node.phi
     elif method == "diff":
-        return with_differentiable_renderer(mesh_path, attempted_viewpoints)
+        return with_differentiable_renderer(mesh_path, attempted_viewpoints, differentiable_rendering_model)
     elif method == "pcd":
         if pcd_model_path is None or not pcd_model_path.exists():
             raise ValueError("pcd_model_path must be specified and must exist for method 'pcd'")
