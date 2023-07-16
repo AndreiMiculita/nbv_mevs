@@ -13,23 +13,37 @@ from pipeline.get_captures import get_capture
 from pipeline.get_new_viewpoint import get_new_viewpoint_coords
 
 
-def main(args=None):
+def main(
+        mesh_path: Path,
+        classification_model: Path,
+        possible_viewpoints_path: Path,
+        confidence_threshold: float,
+        method: str,
+        max_attempts: int = 10,
+        pcd_entropy_prediction_model: Path = None,
+        differentiable_rendering_model: Path = None
+):
     """
     Main function for taking the input image and classifying it based on multiple viewpoints.
+    :param mesh_path: the path to the mesh file
+    :param classification_model: the path to the classification model
+    :param possible_viewpoints_path: the path to the possible viewpoints graph
+    :param confidence_threshold: the confidence threshold for the classification model; if the confidence is below this
+    threshold, the model will choose a new viewpoint
+    :param method: the method for choosing a new viewpoint
+    :param pcd_entropy_prediction_model: the path to the point cloud embedding network model
+    :param differentiable_rendering_model: the path to the differentiable rendering model
+    :return: the class id, confidence and list of attempted viewpoints
     """
 
     # ModelNet10 classes
     class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet']
-
-    mesh_path = Path(args.mesh_path)
     confidence = 0
-    confidence_threshold = args.confidence
-    method = args.method
 
     attempted_viewpoints = []
 
     # Read the graph from the graphml file
-    possible_viewpoints_graph_nx = nx.read_graphml(args.possible_viewpoints_path)
+    possible_viewpoints_graph_nx = nx.read_graphml(possible_viewpoints_path)
 
     # Example node: <node id="A: 90.0, 0.0"/>
     possible_viewpoints = []
@@ -64,7 +78,7 @@ def main(args=None):
     # Load model from ckpt file and set to eval mode, set outputs to size 10
     model = torchvision.models.resnet18(pretrained=False)
     model.fc = torch.nn.Linear(512, len(class_names))
-    model.load_state_dict(torch.load(args.classification_model))
+    model.load_state_dict(torch.load(classification_model))
     model.eval()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -97,8 +111,7 @@ def main(args=None):
                 print(f'\nConfidence too low ({confidence:.2f}), choosing new viewpoint, method: {method}')
                 theta, phi = get_new_viewpoint_coords(mesh_path, attempted_viewpoints, possible_viewpoints_graph,
                                                       method,
-                                                      pcd_model_path=Path(
-                                                          args.pcd_entropy_prediction_model) if method == 'pcd' else None)
+                                                      pcd_model_path=pcd_entropy_prediction_model if method == 'pcd' else None)
                 print(
                     f'New viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
                     f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
@@ -126,10 +139,18 @@ if __name__ == '__main__':
     parser.add_argument('--pcd_entropy_prediction_model', type=str,
                         default='../data/ckpt_files/06186690-epoch=34-val_loss=0.01.ckpt',
                         help='Path to the entropy prediction model checkpoint (pointnet)')
-    parser.add_argument('--differential_rendering_model', type=str)
+    parser.add_argument('--differentiable_rendering_model', type=str, default='/')  # TODO
     parser.add_argument('--possible_viewpoints_path', type=str, default='../config/entropy_views_10_better.graphml')
     parser.add_argument('--confidence', metavar='confidence', type=float, default=20, help='Confidence threshold')
     parser.add_argument('--method', metavar='method', type=str, default='pcd',
                         help='Method for choosing the next viewpoint, choose from: random, diff, pcd')
     args = parser.parse_args()
-    main(args)
+    main(
+        mesh_path=Path(args.mesh_path),
+        classification_model=Path(args.classification_model),
+        pcd_entropy_prediction_model=Path(args.pcd_entropy_prediction_model),
+        differentiable_rendering_model=Path(args.differentiable_rendering_model),
+        possible_viewpoints_path=Path(args.possible_viewpoints_path),
+        confidence_threshold=args.confidence,
+        method=args.method
+    )
