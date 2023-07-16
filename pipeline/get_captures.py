@@ -15,6 +15,7 @@ data
 """
 
 from pathlib import Path
+from typing import Union
 
 import cv2
 import numpy as np
@@ -24,14 +25,15 @@ image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-da
 point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "view-dataset"
 
 
-def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image"):
+def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image") \
+        -> Union[np.ndarray, o3d.geometry.PointCloud, None]:
     """
-    Get the image of the mesh at the specified theta and phi.
+    Get the capture of the mesh at the specified theta and phi.
     :param mesh_path: The path to the mesh.
     :param theta: angle in radians [0 - pi]
     :param phi: angle in radians [0 - 2pi]
     :param capture_type: The type of capture to retrieve. Can be "image" or "pcd"
-    :return: The image of the mesh at the specified theta and phi.
+    :return: The capture of the mesh at the specified theta and phi.
     """
 
     dataset_path = image_dataset_path if capture_type == "image" else point_cloud_dataset_path
@@ -55,16 +57,12 @@ def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image")
     # Get the file that matches the class name, object index, theta, and phi
     files = list(file_path.parent.glob(file_path.name))
     if not files:
-        print("No file found. Has the dataset been created? Does the angle exist in the dataset?")
+        print(f'No file found. Has the {capture_type} dataset been created? Does the angle exist in the dataset?')
         return None
 
     if capture_type != "pcd":
         # Read the image
-        image = cv2.imread(str(files[0]))
-
-        return image
+        return cv2.imread(str(files[0]))
     else:
         # Read the point cloud
-        pcd = o3d.io.read_point_cloud(str(files[0]))
-
-        return pcd
+        return o3d.io.read_point_cloud(str(files[0]))
