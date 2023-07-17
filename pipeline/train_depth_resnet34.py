@@ -1,6 +1,6 @@
-# We start with a ResNet-18 model pretrained on ImageNet,
+# We start with a ResNet-34 model pretrained on ImageNet,
 # replace the last layer with a linear layer with 10 outputs (one for each class),
-# and train the model on our dataset of rendered images.
+# and train the model on our dataset of rendered depth captures.
 import hashlib
 import os
 import sys
@@ -13,7 +13,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data.dataset import random_split
 
-from image_dataset import ModelNet10ImageDataset
+from depth_dataset import ModelNet10DepthDataset
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
@@ -28,17 +28,17 @@ def main():
     # this is useful to avoid overwriting checkpoints when running multiple experiments
     exp_hash = hashlib.md5(str(time.time()).encode()).hexdigest()[0:8]
 
-    # Load the pretrained ResNet-18 model
-    resnet18 = torchvision.models.resnet18(pretrained=True)
+    # Load the pretrained ResNet-34 model
+    resnet34 = torchvision.models.resnet34(pretrained=True)
 
     # Print the model architecture
-    print(resnet18)
+    print(resnet34)
 
     # Replace the last layer with a linear layer with 10 outputs (one for each class)
-    resnet18.fc = nn.Linear(512, 10)
+    resnet34.fc = nn.Linear(512, 10)
 
     # Print the new model architecture
-    print(resnet18)
+    print(resnet34)
 
     # Define the train transforms
     train_transforms = transforms.Compose([
@@ -47,8 +47,8 @@ def main():
         transforms.RandomVerticalFlip(p=0.5),
     ])
 
-    # Load the dataset of rendered images
-    dataset = ModelNet10ImageDataset(transforms=train_transforms, train=True)
+    # Load the dataset of rendered depth captures
+    dataset = ModelNet10DepthDataset(transforms=train_transforms, train=True)
 
     # Split the dataset into train and validation sets
     train_ratio = 0.8
@@ -65,10 +65,10 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(resnet18.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = optim.Adam(resnet34.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Move the model to the GPU
-    resnet18.to(device)
+    resnet34.to(device)
 
     # Train the model, with early stopping based on the validation loss
     best_val_loss = float('inf')
@@ -83,7 +83,7 @@ def main():
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
-            outputs = resnet18(inputs)
+            outputs = resnet34(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -96,20 +96,20 @@ def main():
         for i, data in enumerate(val_loader, 0):
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
-            outputs = resnet18(inputs)
+            outputs = resnet34(inputs)
             loss = criterion(outputs, labels)
             val_loss += loss.item()
         print(f'Validation loss for epoch {epoch}: {val_loss / len(val_loader)}')
         val_loss_history.append(val_loss / len(val_loader))
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            best_model = resnet18
+            best_model = resnet34
         if len(val_loss_history) > 5 and val_loss_history[-1] > val_loss_history[-5]:
             break
     print('Finished Training')
 
     # Save the best model
-    torch.save(best_model.state_dict(), f'{exp_hash}-resnet18_modelnet10.ckpt')
+    torch.save(best_model.state_dict(), f'{exp_hash}-resnet34_modelnet10.ckpt')
 
 
 if __name__ == '__main__':
