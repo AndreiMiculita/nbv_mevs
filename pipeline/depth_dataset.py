@@ -40,7 +40,7 @@ class ModelNet10DepthDataset(Dataset):
             os.makedirs(self._cache)
 
             print("Converted to LMDB for faster dataloading while training")
-            for split in ["train", "test"]:
+            for split in ["train"]:
                 if split == "train":
                     shape_ids = [
                         line.rstrip()
