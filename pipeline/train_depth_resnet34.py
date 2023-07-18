@@ -91,10 +91,10 @@ def main():
                 print(e)
                 # Wide print
                 torch.set_printoptions(profile="full")
-                print(inputs)
+                # print(inputs)
                 # print the max value of the input tensor
                 print(torch.max(inputs))
-                break
+                quit()
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
