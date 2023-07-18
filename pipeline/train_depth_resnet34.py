@@ -92,6 +92,8 @@ def main():
                 # Wide print
                 torch.set_printoptions(profile="full")
                 print(inputs)
+                # print the max value of the input tensor
+                print(torch.max(inputs))
                 break
             loss = criterion(outputs, labels)
             loss.backward()
