@@ -81,6 +81,8 @@ def main():
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             inputs, labels = data
+            # Depth map has only one channel, so we need to add 2 more channels to match the pretrained model
+            inputs = torch.cat((inputs, inputs, inputs), 1)
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = resnet34(inputs)
