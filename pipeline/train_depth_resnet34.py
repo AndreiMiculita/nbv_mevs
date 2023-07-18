@@ -89,8 +89,10 @@ def main():
                 outputs = resnet34(inputs)
             except RuntimeError as e:
                 print(e)
+                # Wide print
+                torch.set_printoptions(profile="full")
                 print(inputs)
-                continue
+                break
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
