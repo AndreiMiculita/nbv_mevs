@@ -85,7 +85,12 @@ def main():
             inputs = torch.cat((inputs, inputs, inputs), 1)
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
-            outputs = resnet34(inputs)
+            try:
+                outputs = resnet34(inputs)
+            except RuntimeError as e:
+                print(e)
+                print(inputs)
+                continue
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
