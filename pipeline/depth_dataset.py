@@ -106,7 +106,7 @@ class ModelNet10DepthDataset(Dataset):
                         )
                         idx += 1
 
-                        if i % 10000 == 0:
+                        if idx % 10000 == 0:
                             txn.commit()
                             txn = lmdb_env.begin(write=True)
 
