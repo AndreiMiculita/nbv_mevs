@@ -37,16 +37,18 @@ For more info, run:
 python3 pipeline/classification_pipeline.py --help
 ```
 
+The script `evaluate_pipeline` was used to run the pipeline on the entire test set.
+
 Datasets are not tracked and can be obtained by running the scripts in the `generate_datasets` directory.
 You can get more info by running each script with the `--help` flag, e.g.:
 ```bash
 python3 generate_datasets/generate_view_dataset.py --help
 ```
-Note that you need ModelNet40 downloaded and extracted, (`classification_pipeline` assumes in `~/datasets/ModelNet40`).
+Note that you need ModelNet10 downloaded and extracted, (`classification_pipeline` assumes in `~/datasets/ModelNet10`).
 You can get it [here](https://modelnet.cs.princeton.edu/).
 
 When training, caching is used (with `lmdb`) to speed up loading data.
-However, the cache database files can get quite large (in my experience, 9 times the size of the dataset), so make sure you have plenty of disk space.
+However, the cache database files can get quite large for images (in my experience, 9 times the size of a png dataset), so make sure you have plenty of disk space.
 
 You might need to prepend `PYTHONPATH=.` to the commands for the imports to work.
 
