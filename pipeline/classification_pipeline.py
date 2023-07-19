@@ -57,6 +57,11 @@ def main(
         node = Node(str(i), np.radians(theta), np.radians(phi), 0)
         possible_viewpoints_graph.append(node)
 
+    if len(possible_viewpoints_graph) < max_attempts:
+        print(f'Number of possible viewpoints ({len(possible_viewpoints_graph)}) is less than max attempts '
+              f'({max_attempts}), please specify a different graph or decrease max attempts.')
+        exit(1)
+
     # Copy the edges as well, with Node.add_neighbor(); we use the neighbor's name to find it in the graph
     for i, node in enumerate(possible_viewpoints_graph_nx.nodes):
         for neighbor in possible_viewpoints_graph_nx.neighbors(node):
