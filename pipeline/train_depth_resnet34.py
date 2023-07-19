@@ -83,6 +83,7 @@ def main():
             inputs, labels = data
             # Depth map has only one channel, so we need to add 2 more channels to match the pretrained model
             inputs = torch.cat((inputs, inputs, inputs), 1)
+            inputs = inputs.float() / 255
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
             try:
@@ -94,6 +95,7 @@ def main():
                 # print(inputs)
                 # print the max value of the input tensor
                 print(torch.max(inputs))
+                print(torch.unique(inputs))
                 quit()
             loss = criterion(outputs, labels)
             loss.backward()
@@ -106,6 +108,8 @@ def main():
         val_loss = 0.0
         for i, data in enumerate(val_loader, 0):
             inputs, labels = data
+            inputs = torch.cat((inputs, inputs, inputs), 1)
+            inputs = inputs.float() / 255
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = resnet34(inputs)
             loss = criterion(outputs, labels)
