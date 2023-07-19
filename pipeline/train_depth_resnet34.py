@@ -124,7 +124,7 @@ def main():
     print('Finished Training')
 
     # Save the best model
-    torch.save(best_model.state_dict(), f'{exp_hash}-resnet34_modelnet10.ckpt')
+    torch.save(best_model.state_dict(), f'{exp_hash}-resnet34_depth_modelnet10.ckpt')
 
 
 if __name__ == '__main__':
