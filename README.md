@@ -48,7 +48,7 @@ Note that you need ModelNet10 downloaded and extracted, (`classification_pipelin
 You can get it [here](https://modelnet.cs.princeton.edu/).
 
 When training, caching is used (with `lmdb`) to speed up loading data.
-However, the cache database files can get quite large for images (in my experience, 9 times the size of a png dataset), so make sure you have plenty of disk space.
+However, the cache database files can get quite large for images (in my experience, 10-20 times the size of a png dataset), so make sure you have plenty of disk space.
 
 You might need to prepend `PYTHONPATH=.` to the commands for the imports to work.
 
