@@ -59,7 +59,8 @@ def main(
 
     if len(possible_viewpoints_graph) < max_attempts:
         print(f'Number of possible viewpoints ({len(possible_viewpoints_graph)}) is less than max attempts '
-              f'({max_attempts}), please specify a different graph or decrease max attempts.')
+              f'({max_attempts}), please specify a different graph or decrease max attempts; '
+              f'we do not attempt the same viewpoint twice.')
         exit(1)
 
     # Copy the edges as well, with Node.add_neighbor(); we use the neighbor's name to find it in the graph
@@ -94,7 +95,10 @@ def main(
         while confidence < confidence_threshold and len(attempted_viewpoints) < max_attempts:
             print(f'\nAttempting viewpoint: ({theta:.2f}, {phi:.2f}) radians ')
             # Retrieve the image, given the viewpoint
-            image = get_capture(mesh_path, theta, phi)
+            try:
+                image = get_capture(mesh_path, theta, phi)
+            except ValueError:  # All viewpoints have been attempted, we can just skip ahead
+                break
 
             if image is None:
                 print('Could not retrieve image, exiting...')
@@ -121,16 +125,15 @@ def main(
                     f'New viewpoint coordinates: ({theta:.2f}, {phi:.2f}) radians '
                     f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
                 )
-            else:
-                print(f'\nDone! Predicted class: {class_names[np.argmax(prediction_accumulator)]}')
-                print(f'Confidence: {confidence:.5f}')
-                print(f'Attempted {len(attempted_viewpoints)} viewpoints')
-                # Softmax the accumulator
-                probabilities = torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator))
-                accumulator_dict = dict(zip(class_names, zip(prediction_accumulator, probabilities)))
-                print('Class      : Accumulated : Probability (softmaxed)')
-                print('\n'.join([f'{key.ljust(11)}:      {value: 06.2f} : {prob:.3f}' for key, (value, prob) in
-                                 accumulator_dict.items()]))
+        print(f'\nDone! Predicted class: {class_names[np.argmax(prediction_accumulator)]}')
+        print(f'Confidence: {confidence:.5f}')
+        print(f'Attempted {len(attempted_viewpoints)} viewpoints')
+        # Softmax the accumulator
+        probabilities = torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator))
+        accumulator_dict = dict(zip(class_names, zip(prediction_accumulator, probabilities)))
+        print('Class      : Accumulated : Probability (softmaxed)')
+        print('\n'.join([f'{key.ljust(11)}:      {value: 06.2f} : {prob:.3f}' for key, (value, prob) in
+                         accumulator_dict.items()]))
 
     return np.argmax(prediction_accumulator), confidence, attempted_viewpoints
 
