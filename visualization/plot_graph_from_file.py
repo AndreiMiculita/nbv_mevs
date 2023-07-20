@@ -48,7 +48,7 @@ def plot_graph_from_file(generate_gif=True):
     # ax.plot_surface(x, y, z, color='g')
 
     # Colors for weights, use cmap='jet' for a gradient
-    entropies = {
+    entropies_40 = {
         0: 0.961198,
         1: 2.421217,
         2: 2.322561,
@@ -91,13 +91,26 @@ def plot_graph_from_file(generate_gif=True):
         39: 0.941295,
     }
 
+    entropies_10 = {
+        0: 1.379220138671742,
+        1: 0.5217527758939396,
+        2: 0.4554831649288434,
+        3: 1.8228054455197913,
+        4: 1.73852709715075,
+        5: 2.2881577521407004,
+        6: 1.5494229819595706,
+        7: 1.688000607745385,
+        8: 0.9925907866301316,
+        9: 1.7005562853564777,
+    }
+
     cmap = plt.cm.get_cmap('jet', 10)
     normalize = colors.Normalize(vmin=0, vmax=6)
 
     # Plot the nodes
     node_coords = [G.nodes[node]["coords"] for node in G.nodes]
     node_coords = np.array(node_coords)
-    ax.scatter(node_coords[:, 0], node_coords[:, 1], node_coords[:, 2], c=list(entropies.values()), cmap=cmap,
+    ax.scatter(node_coords[:, 0], node_coords[:, 1], node_coords[:, 2], c=list(entropies_40.values()), cmap=cmap,
                norm=normalize)
 
     # show the names under the nodes
@@ -139,7 +152,7 @@ def plot_graph_from_file(generate_gif=True):
         for angle in range(0, 360):
             images.append(imageio.imread(f'../assets/temp/entropy_views_{len(G.nodes)}_{angle}.png'))
 
-        imageio.mimsave(f'../assets/entropy_views_{len(G.nodes)}_animation.gif', images, duration=0.01)
+        imageio.mimsave(f'../assets/entropy_views_{len(G.nodes)}_graph_animation.gif', images, duration=0.01)
 
     else:
         # Show the plot, square
