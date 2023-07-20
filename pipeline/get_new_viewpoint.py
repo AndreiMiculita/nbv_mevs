@@ -71,21 +71,46 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # WARNING: this only works on the same environment that the PointNet model was trained on
-    # model = torch.load(pcd_model_path)
-    # model.to(device)
-    # model.eval()
-    #
-    # with torch.no_grad():
-    #     pcd = pcd.to(device)
-    #     entropy = model(pcd)
-    #     entropy = entropy.cpu().numpy()
+    # Load the PointNet model
+    try:
+        from pointnet2.models import PointNet2EntropySSG
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("PointNet model not found. Are you in the correct environment?")
+    model = PointNet2EntropySSG.load_from_checkpoint(str(pcd_model_path))
+    model.to(device)
+    model.eval()
 
-    # TODO: For now just random entropies
-    entropy = np.random.rand(len(possible_viewpoints_graph))
+    # Run inference
+    point_set = np.asarray(pcd.points, dtype=np.float32)
+    # num_points random points from the point set
+    pt_idxs = np.arange(0, point_set.shape[0])
+    np.random.shuffle(pt_idxs)
+    pt_idxs = pt_idxs[: 5000]
+
+    point_set = point_set[pt_idxs, :]
+
+    def pc_normalize(pc):
+        l = pc.shape[0]
+        centroid = np.mean(pc, axis=0)
+        pc = pc - centroid
+        m = np.max(np.sqrt(np.sum(pc ** 2, axis=1)))
+        pc = pc / m
+        return pc
+
+    point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
+
+    # Pad point_set with 0s up to 6 columns
+    point_set = np.pad(point_set, ((0, 0), (0, 6 - point_set.shape[1])), "constant")
+
+    point_set = torch.from_numpy(point_set).to(device)
+
+    with torch.no_grad():
+        entropy = model(point_set.unsqueeze(0)).squeeze(0).cpu().numpy()  # Funny business to get rid of batch dimension
 
     # Build view graph structure; entropy should have the same length as possible_viewpoints_graph
     if len(entropy) != len(possible_viewpoints_graph):
-        raise ValueError("Length of pcd model output does not match length of view graph")
+        raise ValueError("Length of pcd model output does not match length of view graph. Are you sure you're using "
+                         "the correct model/view graph?")
     else:
         for i, node in enumerate(possible_viewpoints_graph):
             node.weight = entropy[i]
@@ -126,4 +151,4 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
             return node.theta, node.phi
 
     # If all the views have been attempted, raise an error
-    raise ValueError("All viewpoints have been attempted")
+    raise ValueError("All viewpoints have been attempted, still not sure")
