@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 # The csv files are exported from Tensorboard, they are expected to contain the columns "Wall time", "Step" and "Value"
 
 def main():
-    train_file = "../data/training_progress/run-version_38-tag-train_loss.csv"
-    val_file = "../data/training_progress/run-version_38-tag-val_loss.csv"
+    train_file = "../data/training_logs/run-version_38-tag-train_loss.csv"
+    val_file = "../data/training_logs/run-version_38-tag-val_loss.csv"
 
     train_table = pd.read_csv(train_file)
     val_table = pd.read_csv(val_file)
