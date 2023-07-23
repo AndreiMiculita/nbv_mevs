@@ -110,7 +110,17 @@ def main(
             image = transforms.ToTensor()(image).to(device)
 
             # Get the predictions
-            prediction_accumulator += model(image[None, ...]).cpu().numpy()[0]
+            try:
+                prediction_accumulator += model(image[None, ...]).cpu().numpy()[0]
+            except RuntimeError as e:
+                print(e)
+                # Wide print
+                torch.set_printoptions(profile="full")
+                # print the max value of the input tensor
+                print(torch.max(image))
+                print(torch.unique(image))
+                quit()
+
             confidence = np.max(torch.nn.Softmax(dim=0)(torch.tensor(prediction_accumulator)).cpu().numpy())
             attempted_viewpoints.append((theta, phi))
 
