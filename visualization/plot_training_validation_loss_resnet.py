@@ -8,13 +8,19 @@ The lines prefixed with "Validation loss: " are the validation loss values
 
 import os
 import re
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+root_dir = Path(__file__).parent.parent
+data_dir = root_dir / "data"
+training_logs_dir = data_dir / "training_logs"
+assets_dir = root_dir / "assets"
 
-def main():
-    file = "../data/training_progress/resnet_training.txt"
+
+def main(filename):
+    file = training_logs_dir / filename
 
     with open(file, "r") as f:
         lines = f.readlines()
@@ -23,30 +29,44 @@ def main():
     val_loss = []
     for line in lines:
         print(line)
+        # There are two types of lines in the logs: training loss and validation loss
+        # Also for some files, the training loss is in the format "[0, 100] loss: 1.7620644104480743"
+        # and for others it's in the format "Training loss for epoch 0, steps 0-99: 0.7559846869111061"
+        # Also the validation loss can be in the format "Validation loss: 0.7559846869111061" or
+        # "Validation loss for epoch 0: 0.7559846869111061"
         if "] loss:" in line:
-            print("train loss")
             loss = float(re.findall(r"\[[0-9.]+, [0-9.]+] loss: ([0-9.]+)", line)[0])
             train_loss.append(loss)
+        elif "Training loss for epoch" in line:
+            loss = float(re.findall(r"Training loss for epoch [0-9.]+, steps [0-9.]+-[0-9.]+: ([0-9.]+)", line)[0])
+            train_loss.append(loss)
         elif "Validation loss:" in line:
-
-            print("val loss")
             loss = float(re.findall(r"Validation loss: ([0-9.]+)", line)[0])
             val_loss.append(loss)
+        elif "Validation loss for epoch" in line:
+            loss = float(re.findall(r"Validation loss for epoch [0-9.]+: ([0-9.]+)", line)[0])
+            val_loss.append(loss)
+
+    print(f'Train loss: {train_loss}')
+    print(f'Val loss: {val_loss}')
+    print(f'file: {file}')
 
     steps_per_epoch = len(train_loss) // len(val_loss)
 
     plt.plot(np.array(range(1, len(train_loss) + 1)) / steps_per_epoch, train_loss, label="Training Loss")
-    plt.plot(np.array(range(steps_per_epoch, len(train_loss) + 1, steps_per_epoch)) / steps_per_epoch, val_loss, label="Validation Loss")
+    plt.plot(np.array(range(steps_per_epoch, len(train_loss) + 1, steps_per_epoch)) / steps_per_epoch, val_loss,
+             label="Validation Loss")
 
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.title("Training and Validation Loss")
+    plt.title(f"Training and Validation Loss for model {filename.split('_')[0].replace('resnet', 'ResNet-')},"
+              f" {filename.split('_')[2][:2]} {filename.split('_')[1]} views")
     plt.legend()
 
-    # Create assets dir if it doesn't exist
-    if not os.path.exists("../assets/resnet/"):
-        os.makedirs("../assets/resnet/")
-    plt.savefig("../assets/resnet/training_validation_loss.pdf")
+    os.makedirs(assets_dir / "resnet", exist_ok=True)
+    # filename based on the name of the log file
+    output_filename = file.stem + ".pdf"
+    plt.savefig(assets_dir / "resnet" / output_filename)
     plt.show()
 
     print("Final training loss: ", train_loss[-1])
@@ -54,4 +74,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    for filename in [
+        'resnet18_image_10views_training_output.txt',
+        'resnet18_depth_40views_training_output.txt',
+        'resnet18_image_40views_training_output.txt',
+        'resnet34_depth_40views_training_output.txt',
+    ]:
+        main(filename)
