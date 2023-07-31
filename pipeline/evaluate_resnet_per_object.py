@@ -29,6 +29,10 @@ class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_s
 
 def main():
     for ckpt_file in ckpt_dir.iterdir():
+        # Write to a log file with the ckpt file name
+        with open(f'evaluate_resnet_per_object_{ckpt_file.name}_10views.log', 'w') as f:
+            sys.stdout = f
+            sys.stderr = f
         # Load the pretrained ResNet-18 model
         resnet = torchvision.models.resnet18(
             pretrained=False) if 'resnet18' in ckpt_file.name else torchvision.models.resnet34(pretrained=False)
@@ -93,11 +97,11 @@ def main():
                 correct += (predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item()
 
                 correct_per_object += (
-                            predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item()
+                        predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item()
                 total_per_object += len(predicted)
 
-                print((predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item(), len(
-                    predicted) / 2)
+                print((predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item(),
+                      len(predicted) / 2)
 
                 # If most of the views are classified as the correct class
                 if (predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item() > len(
