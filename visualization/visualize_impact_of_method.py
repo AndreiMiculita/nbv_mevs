@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 def main():
     # Path to the directory containing the evaluation results
-    results_dir = Path('/home/andrei/PycharmProjects/nbv_mevs/results/evtest')
+    results_dir = Path('/home/andrei/PycharmProjects/nbv_mevs/results/evaluation_results_40views_image_resnet18')
 
     # List the files matching the pattern
     files = [file for file in os.listdir(results_dir) if re.match(r'evaluation_results_.*\.txt', file)]
@@ -46,23 +46,42 @@ def main():
         try:
             average_number_of_attempts_for_all_objects = float(
                 [line for line in lines if
-                 line.startswith('Average number of attempted viewpoints for all objects in test set:')][0].split(' ')[-1])
+                 line.startswith('Average number of attempted viewpoints for all objects in test set:')][0].split(' ')[
+                    -1])
         except IndexError:
             print(f'Could not find average number of attempted viewpoints for all objects in test set in file {file}')
             continue
 
+        if max_attempts == '1':
+            continue
+
         # Store the results
         results[(method, confidence_threshold, max_attempts)] = {
-            'accuracy': accuracy,
+            'accuracy': accuracy * 100,
             'average_number_of_attempts_for_all_objects': average_number_of_attempts_for_all_objects
         }
 
+    confidence_thresholds = []
+    max_attempts_list = []
+
     # Print them nicely
     for (method, confidence_threshold, max_attempts), result in results.items():
+        if confidence_threshold not in confidence_thresholds:
+            confidence_thresholds.append(confidence_threshold)
+        if max_attempts not in max_attempts_list:
+            max_attempts_list.append(max_attempts)
         print(f'{method}, {confidence_threshold}, {max_attempts}:')
         print(f'\tAccuracy: {result["accuracy"]}')
         print(f'\tAverage number of attempted viewpoints for all objects in test set: '
               f'{result["average_number_of_attempts_for_all_objects"]}')
+
+    # Remove duplicate confidence thresholds and max attempts
+    confidence_thresholds = list(set(confidence_thresholds))
+    max_attempts_list = list(set(max_attempts_list))
+
+    # Sort the confidence thresholds and max attempts
+    confidence_thresholds.sort()
+    max_attempts_list.sort()
 
     # Plot the results
     # Plot the accuracy
@@ -90,39 +109,52 @@ def main():
             'average_number_of_attempts_for_all_objects': result['average_number_of_attempts_for_all_objects']
         })
 
+    texts = []
+
     # Plot the accuracy
     for method, results_in_method in results_by_method.items():
-        ax.scatter([float(result['confidence_threshold']) + (-0.01 if method == 'random' else 0.01) for result in results_in_method],
+        ax.scatter([float(result['confidence_threshold']) + (-0.01 if method == 'random' else 0.01) for result in
+                    results_in_method],
                    [result['accuracy'] for result in results_in_method],
                    label=method)
         # Add a label showing the max attempts, next to each point
+        # Do not use annotate, because it does not work well with adjust_text
         for result in results_in_method:
-            ax.annotate(result['max_attempts'],
-                        (float(result['confidence_threshold']), result['accuracy']),
-                        xytext=(-10, 0) if method == 'random' else (10, 0), textcoords='offset points')
+            texts.append(ax.text(float(result['confidence_threshold']) + (-0.015 if method == 'random' else 0.015),
+                                 result['accuracy'],
+                                 result['max_attempts'],
+                                 horizontalalignment='right' if method == 'random' else 'left',
+                                 verticalalignment='center',
+                                 zorder=1000))
+
+    # bigger window
+    fig.set_size_inches(16, 8)
 
     # Parse results by max attempts to draw line between points of each method, which have the same max attempts
     # Do not show it in the legend
-    max_attempts_list = list(results_by_max_attempts.keys())
-    methods = list(results_by_method.keys())
-    confidence_threshold_list = list(results_by_method[methods[0]][0].keys())
     for max_attempts in max_attempts_list:
-        for confidence_threshold in confidence_threshold_list:
-            for method in methods:
-                try:
-                    print(results[(method, confidence_threshold, max_attempts)])
-                    ax.plot(results[(method, confidence_threshold, max_attempts)]['accuracy'],
-                            confidence_threshold,
-                            label='_nolegend_')
-                except KeyError:
-                    continue
+        for confidence_threshold in confidence_thresholds:
+            point1 = float(confidence_threshold) + 0.01, results[('pcd', confidence_threshold, max_attempts)][
+                'accuracy']
+            point2 = float(confidence_threshold) - 0.01, results[('random', confidence_threshold, max_attempts)][
+                'accuracy']
+            # Plot a line between the points; make it green if the accuracy is higher for pcd, red otherwise
+            # Interpolate the color between green and red, based on the accuracy difference; we want green for 1.0 and
+            # red for -1.0
+            difference = results[('pcd', confidence_threshold, max_attempts)]['accuracy'] - \
+                            results[('random', confidence_threshold, max_attempts)]['accuracy']
+            # Clamp the difference to [-1.0, 1.0]
+            difference = max(min(difference, 1.0), -1.0)
+            color_tuple = (-difference, 0.0, 0.0) if difference < 0 else (0.0, difference, 0.0)
+            ax.plot([point1[0], point2[0]], [point1[1], point2[1]],
+                    color=color_tuple, zorder=difference * 100, alpha=0.1 + abs(difference) * 0.9)
     ax.set_xlabel('Confidence threshold')
     ax.set_ylabel('Accuracy')
     ax.set_xticks([0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5])
     # set top limit to 1.0
-    ax.set_ylim([0.7, 1.0])
+    ax.set_ylim([70, 100])
     ax.legend()
-    plt.savefig('../assets/comparisons/accuracy_vs_confidence_threshold.png')
+    plt.savefig('../assets/comparisons/accuracy_vs_confidence_threshold.pdf')
     plt.show()
 
     # TODO: the following is not working yet, probably because of some list reference issues
