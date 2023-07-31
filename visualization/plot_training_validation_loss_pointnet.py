@@ -1,7 +1,7 @@
 import os
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 # Plot the training and validation loss over time; the table has a Step and a Value column,
@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 # The csv files are exported from Tensorboard, they are expected to contain the columns "Wall time", "Step" and "Value"
 
 def main():
-    train_file = "../data/training_logs/run-version_38-tag-train_loss.csv"
-    val_file = "../data/training_logs/run-version_38-tag-val_loss.csv"
+    train_file = "../data/training_logs/pointnet10views/run-version_49-tag-train_loss.csv"
+    val_file = "../data/training_logs/pointnet10views/run-version_49-tag-val_loss.csv"
 
     train_table = pd.read_csv(train_file)
     val_table = pd.read_csv(val_file)
@@ -29,7 +29,7 @@ def main():
     # Create assets dir if it doesn't exist
     if not os.path.exists("../assets/pointnet/"):
         os.makedirs("../assets/pointnet/")
-    plt.savefig("../assets/pointnet/training_validation_loss.pdf")
+    plt.savefig("../assets/pointnet/training_validation_loss_10views.pdf")
     plt.show()
 
     print("Final training loss: ", train_table["Value"].iloc[-1])
