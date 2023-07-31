@@ -20,23 +20,38 @@ from typing import Union
 import cv2
 import numpy as np
 import open3d as o3d
-
-image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-dataset"
-point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "view-dataset"
+from PIL import Image
 
 
-def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image") \
+def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="depth", nviews=10) \
         -> Union[np.ndarray, o3d.geometry.PointCloud, None]:
     """
     Get the capture of the mesh at the specified theta and phi.
     :param mesh_path: The path to the mesh.
     :param theta: angle in radians [0 - pi]
     :param phi: angle in radians [0 - 2pi]
-    :param capture_type: The type of capture to retrieve. Can be "image" or "pcd"
+    :param capture_type: The type of capture to retrieve. Can be "image", "depth" or "pcd"
+    :param nviews: The number of views to capture
     :return: The capture of the mesh at the specified theta and phi.
     """
 
-    dataset_path = image_dataset_path if capture_type == "image" else point_cloud_dataset_path
+    if nviews == 10:
+        image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-dataset-mnet10-10views"
+        depth_dataset_path = Path(__file__).resolve().parent.parent / "data" / "depth-dataset-mnet10-10views-test"
+        point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "pcd-dataset-mnet10-10views"
+    elif nviews == 40:
+        image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-dataset-mnet10-40views"
+        depth_dataset_path = Path(__file__).resolve().parent.parent / "data" / "depth-dataset-mnet10-40views"
+        point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "pcd-dataset-mnet10-40views-test"
+    else:
+        raise ValueError("Invalid number of views: {}".format(nviews))
+
+    if capture_type == "image":
+        dataset_path = image_dataset_path
+    elif capture_type == "depth":
+        dataset_path = depth_dataset_path
+    else:
+        dataset_path = point_cloud_dataset_path
 
     # Get the class name from the mesh path
     class_name = mesh_path.parent.parent.stem
@@ -50,7 +65,7 @@ def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image")
 
     file_path = dataset_path / class_name / \
                 f"{class_name}_{object_index}_theta_{theta}_phi_{phi}_vc_*." \
-                f"{'png' if capture_type == 'image' else 'pcd'}"
+                f"{'png' if capture_type == 'image' or capture_type == 'depth' else 'pcd'}"
 
     print(f'Retrieving captured {capture_type} from {file_path}')
 
@@ -60,9 +75,14 @@ def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="image")
         print(f'No file found. Has the {capture_type} dataset been created? Does the angle exist in the dataset?')
         return None
 
-    if capture_type != "pcd":
+    if capture_type == "image":
         # Read the image
         return cv2.imread(str(files[0]))
+    elif capture_type == "depth":
+        # Read the depth image
+        image = Image.open(str(files[0]))
+        image = np.array(image)
+        return image
     else:
         # Read the point cloud
         return o3d.io.read_point_cloud(str(files[0]))
