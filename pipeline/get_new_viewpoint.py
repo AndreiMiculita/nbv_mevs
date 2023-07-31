@@ -37,7 +37,7 @@ def get_new_viewpoint_coords(mesh_path: Path,
         return with_differentiable_renderer(mesh_path, attempted_viewpoints, differentiable_rendering_model)
     elif method == "pcd":
         if pcd_model_path is None or not pcd_model_path.exists():
-            raise ValueError("pcd_model_path must be specified and must exist for method 'pcd'")
+            raise ValueError(f"pcd_model_path {[pcd_model_path]} must be specified and must exist for method 'pcd'")
         return with_point_cloud_embedding_network(mesh_path, attempted_viewpoints, pcd_model_path,
                                                   possible_viewpoints_graph)
 
@@ -65,7 +65,11 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
     from node_weighted_graph.find_local_maximum_nodes import find_local_maximum_nodes
 
     # Get capture pcd of last attempted viewpoint
-    pcd = get_capture(mesh_path, attempted_viewpoints[-1][0], attempted_viewpoints[-1][1], capture_type="pcd")
+    pcd = get_capture(mesh_path,
+                      attempted_viewpoints[-1][0],
+                      attempted_viewpoints[-1][1],
+                      capture_type="pcd",
+                      nviews=len(possible_viewpoints_graph))
 
     # Run inference with the pointnet on the point cloud retrieved, output is entropy list; use CUDA if available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -73,10 +77,11 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
     # WARNING: this only works on the same environment that the PointNet model was trained on
     # Load the PointNet model
     try:
-        from pointnet2.models import PointNet2EntropySSG
+        from pointnet2.models import PointNet2EntropySSG, PointNet2EntropySSG40Views
     except ModuleNotFoundError:
         raise ModuleNotFoundError("PointNet model not found. Are you in the correct environment?")
-    model = PointNet2EntropySSG.load_from_checkpoint(str(pcd_model_path))
+    model = PointNet2EntropySSG.load_from_checkpoint(str(pcd_model_path)) if len(possible_viewpoints_graph) == 10 \
+        else PointNet2EntropySSG40Views.load_from_checkpoint(str(pcd_model_path))
     model.to(device)
     model.eval()
 
@@ -116,15 +121,39 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
             node.weight = entropy[i]
 
     # Print the graph, with all information
-    for node in possible_viewpoints_graph:
-        print(f'Node: {node.name}'
-              f'\n\ttheta: {node.theta}'
-              f'\n\tphi: {node.phi}'
-              f'\n\tweight: {node.weight}'
-              f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
+    # for node in possible_viewpoints_graph:
+    #     print(f'Node: {node.name}'
+    #           f'\n\ttheta: {node.theta}'
+    #           f'\n\tphi: {node.phi}'
+    #           f'\n\tweight: {node.weight}'
+    #           f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
 
     # Find local maxima in view graph, sort them by entropy
-    local_maxima = list(find_local_maximum_nodes(copy.deepcopy(possible_viewpoints_graph)))
+    try:
+        local_maxima = list(find_local_maximum_nodes(copy.deepcopy(possible_viewpoints_graph)))
+    except TypeError as e:
+        print("TYPE ERROR WTF")
+        for node in possible_viewpoints_graph:
+            print(f'Node: {node.name}'
+                  f'\n\ttheta: {node.theta}'
+                  f'\n\tphi: {node.phi}'
+                  f'\n\tweight: {node.weight}'
+                  f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
+        # This happens very rarely, so we just write to a file and continue
+        with open("type_error.txt", "a") as f:
+            f.write(f'mesh_path')
+            f.write(f'attempted_viewpoints')
+            f.write(f'pcd_model_path')
+            for node in possible_viewpoints_graph:
+                f.write(f'Node: {node.name}'
+                        f'\n\ttheta: {node.theta}'
+                        f'\n\tphi: {node.phi}'
+                        f'\n\tweight: {node.weight}'
+                        f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
+        # Return a random viewpoint
+        random_node = random.choice(possible_viewpoints_graph)
+        return random_node.theta, random_node.phi
+
     local_maxima.sort(key=lambda x: x.weight, reverse=True)
 
     # Pick the highest entropy view; if already attempted, pick next one and so on; return it
