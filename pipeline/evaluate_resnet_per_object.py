@@ -24,18 +24,25 @@ image_dataset_dirs = [
 
 ]
 
+depth_dataset_dirs = [
+
+]
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class_names = ['bathtub', 'bed', 'chair', 'desk', 'dresser', 'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
 
 def main():
-    for image_dataset_dir in image_dataset_dirs:
+    for dataset_dir in image_dataset_dirs + depth_dataset_dirs:
         for ckpt_file in ckpt_dir.iterdir():
-            if 'depth' in ckpt_file.name:
+            # Skip the depth ckpt files if we are evaluating the image dataset, and vice versa
+            if ('depth' in ckpt_file.name and dataset_dir in image_dataset_dirs) or \
+                    ('image' in ckpt_file.name and dataset_dir in depth_dataset_dirs):
                 continue
+
             # Write to a log file with the ckpt file name
-            with open(f'evaluate_resnet_per_object_{ckpt_file.stem}_{image_dataset_dir.name}.log', 'w') as f:
+            with open(f'evaluate_resnet_per_object_{ckpt_file.stem}_{dataset_dir.name}.log', 'w') as f:
                 sys.stdout = f
                 sys.stderr = f
                 print('dead')
@@ -55,7 +62,7 @@ def main():
                 ])
 
                 # First we retrieve the test set filenames from modelnet10_test.txt
-                with open(image_dataset_dir / 'modelnet10_test.txt', 'r') as f:
+                with open(dataset_dir / 'modelnet10_test.txt', 'r') as f:
                     test_set_filenames = f.readlines()
 
                 test_set_filenames = [filename.strip() for filename in test_set_filenames]
@@ -105,19 +112,23 @@ def main():
                             [class_names.index(class_name)] * len(predicted))).sum().item()
 
                         correct_per_object += (
-                                predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item()
+                                predicted == torch.tensor(
+                            [class_names.index(class_name)] * len(predicted))).sum().item()
                         total_per_object += len(predicted)
 
-                        print((predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item(),
-                              len(predicted) / 2)
+                        print(
+                            (predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item(),
+                            len(predicted) / 2)
 
                         # If most of the views are classified as the correct class
-                        if (predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item() > len(
+                        if (predicted == torch.tensor(
+                                [class_names.index(class_name)] * len(predicted))).sum().item() > len(
                                 predicted) / 2:
                             print(f'\tMajority is correct')
                             print(
                                 f'\tCorrect: {correct_per_object}, Total: {total_per_object}, Accuracy: {100 * correct_per_object / total_per_object:.2f}%')
-                            print(f'\tCorrect overall: {correct}, Total: {total}, Accuracy: {100 * correct / total:.2f}%\n')
+                            print(
+                                f'\tCorrect overall: {correct}, Total: {total}, Accuracy: {100 * correct / total:.2f}%\n')
                         else:
                             print(f'\tMajority is incorrect!')
                             print(
@@ -132,7 +143,8 @@ def main():
                             for i, class_name in enumerate(class_names):
                                 print(f'\t\t{class_name}: {outputs[0][i].item()},')
                             print('\t}\n')
-                            print(f'\tCorrect overall: {correct}, Total: {total}, Accuracy: {100 * correct / total:.2f}%\n')
+                            print(
+                                f'\tCorrect overall: {correct}, Total: {total}, Accuracy: {100 * correct / total:.2f}%\n')
 
                 print(f'Accuracy of the network on the {total} test images: {100 * correct / total}%')
 
