@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 
 
 resnet_path = '../data/ckpt_files/resnet18_modelnet10.ckpt'
-image_path = '../data/image-dataset/bathtub/'
+image_path = '../data/image-dataset-mnet10-10views/bathtub/'
 
 
 def main():
