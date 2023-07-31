@@ -21,7 +21,7 @@ def main(
         method: str,
         max_attempts: int = 10,
         pcd_entropy_prediction_model: Path = None,
-        differentiable_rendering_model: Path = None
+        use_depth = False
 ):
     """
     Main function for taking the input image and classifying it based on multiple viewpoints.
@@ -81,8 +81,12 @@ def main(
         f'({np.degrees(theta):.2f}, {np.degrees(phi):.2f}) degrees'
     )
 
-    # Load model from ckpt file and set to eval mode, set outputs to size 10
-    model = torchvision.models.resnet18(pretrained=False)
+    # Load model from ckpt file and set to eval mode, set outputs to size 10; the ckpt file contains resnet18 or
+    # resnet34, depending on the model used for training
+    if 'resnet34' in classification_model.name:
+        model = torchvision.models.resnet34(pretrained=False)
+    else:
+        model = torchvision.models.resnet18(pretrained=False)
     model.fc = torch.nn.Linear(512, len(class_names))
     model.load_state_dict(torch.load(classification_model))
     model.eval()
@@ -96,7 +100,7 @@ def main(
             print(f'\nAttempting viewpoint: ({theta:.2f}, {phi:.2f}) radians ')
             # Retrieve the image, given the viewpoint
             try:
-                image = get_capture(mesh_path, theta, phi)
+                image = get_capture(mesh_path, theta, phi, nviews=len(possible_viewpoints_graph), capture_type='depth' if use_depth else 'image')
             except ValueError:  # All viewpoints have been attempted, we can just skip ahead
                 break
 
@@ -105,9 +109,19 @@ def main(
                 exit(1)
 
             # Prepare the image
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image = cv2.resize(image, (224, 224))
-            image = transforms.ToTensor()(image).to(device)
+            if not use_depth:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                image = cv2.resize(image, (224, 224))
+                image = transforms.ToTensor()(image).to(device)
+            else:
+                # Depth image only has 1 channel, we fake the other 2
+                image = np.repeat(image[:, :, np.newaxis], 3, axis=2)
+
+                # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                image = cv2.resize(image, (224, 224))
+                image = transforms.ToTensor()(image)
+                image = image.float() / 255
+                image = image.to(device)
 
             # Get the predictions
             try:

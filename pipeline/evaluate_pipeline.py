@@ -3,6 +3,7 @@ We run the classification pipeline on the test set and evaluate the results.
 We cannot use a dataloader because we need to get the file paths based on the viewpoint.
 """
 
+import argparse
 import hashlib
 import time
 from pathlib import Path
@@ -14,14 +15,18 @@ from pipeline.classification_pipeline import main as classification_pipeline_mai
 # This contains the file paths to the test set meshes, it's in the data dir which is one dir up from this file
 root_dir = Path(__file__).parent.parent
 test_set_file = root_dir / 'data/ModelNet10/test_set_filenames.txt'
-results_dir = root_dir / 'results'
-
-method_list = ['random', 'pcd']
-confidence_threshold_list = [0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5]
-max_attempts_list = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
-def main():
+def main(
+        method_list: list,
+        confidence_threshold_list: list,
+        max_attempts_list: list,
+        results_dir: Path,
+        classification_model: Path,
+        pcd_entropy_prediction_model: Path,
+        possible_viewpoints_path: Path,
+        test_set_file=test_set_file
+):
     # Print current dir
     print(Path.cwd())
 
@@ -56,12 +61,13 @@ def main():
                         print(f'Testing on mesh: {mesh_path}')
                         class_id, confidence, attempted_viewpoints = classification_pipeline_main(
                             mesh_path=mesh_path,
-                            classification_model=root_dir / 'data/ckpt_files/resnet18_modelnet10.ckpt',
-                            possible_viewpoints_path=root_dir / 'entropy_views_10.graphml',
+                            classification_model=classification_model,
+                            possible_viewpoints_path=possible_viewpoints_path,
                             confidence_threshold=confidence_threshold,
                             method=method,
                             max_attempts=max_attempts,
-                            pcd_entropy_prediction_model=root_dir / 'data/ckpt_files/06186690-epoch=34-val_loss=0.01.ckpt'
+                            pcd_entropy_prediction_model=pcd_entropy_prediction_model,
+                            use_depth=True if 'depth' in classification_model.name else False
                         )
                         confusion_matrix[label][class_id] += 1
                         attempted_viewpoints_per_class[class_id].append(attempted_viewpoints)
@@ -84,16 +90,67 @@ def main():
                     total_number_of_attempts = 0
                     for i, attempted_viewpoints in enumerate(attempted_viewpoints_per_class):
                         number_of_meshes = len(attempted_viewpoints)
-                        number_of_attempts = sum([len(attempted_viewpoints) for attempted_viewpoints in attempted_viewpoints])
+                        number_of_attempts = sum(
+                            [len(attempted_viewpoints) for attempted_viewpoints in attempted_viewpoints])
                         f.write(f'{class_names[i]}: {number_of_attempts / number_of_meshes}\n')
                         total_number_of_attempts += sum(
                             [len(attempted_viewpoints) for attempted_viewpoints in attempted_viewpoints])
                     f.write('Average number of attempted viewpoints for all objects in test set: ')
                     f.write(f'{total_number_of_attempts / len(test_set)}\n')
                     f.write('Most chosen viewpoints:\n')
-                    for i, (viewpoint, count) in enumerate(sorted(viewpoints_counter.items(), key=lambda x: x[1], reverse=True)):
+                    for i, (viewpoint, count) in enumerate(
+                            sorted(viewpoints_counter.items(), key=lambda x: x[1], reverse=True)):
                         f.write(f'{i + 1}. {viewpoint}: {count}\n')
+                    f.write('Models:\n')
+                    f.write(f'Classification model: {classification_model}\n')
+                    f.write(f'PCD entropy prediction model: {pcd_entropy_prediction_model} '
+                            f'(only used if method is pcd)\n')
+                    f.write(f'Possible viewpoints: {possible_viewpoints_path}\n')
 
 
 if __name__ == '__main__':
-    main()
+    # The resnet ckpts we allow:
+    # 'data/ckpt_files/resnets/ac348c87-resnet18_image_modelnet10_40views.ckpt',
+    # 'data/ckpt_files/resnets/a1ea9451-resnet18_depth_modelnet10.ckpt',
+    # 'data/ckpt_files/resnets/47ca4ba8-resnet34_depth_modelnet10_40views.ckpt'
+
+    # The pointnet ckpts we allow:
+    pointnet_ckpts = [
+        # 'data/ckpt_files/pointnets/db3f1f87-epoch=40-val_loss=0.0086_10views.ckpt',
+        'data/ckpt_files/pointnets/66e2c878-epoch=13-val_loss=0.01719_40views.ckpt',
+        'data/ckpt_files/pointnets/c81e6b51-epoch=45-val_loss=0.00729_40views.ckpt'
+    ]
+
+    # Allow passing resnet ckpt as argument, because I want to run it in parallel 3 times
+    # It'll write to different dirs each time, so it's fine
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resnet_ckpt', type=str,
+                        default='data/ckpt_files/resnets/ac348c87-resnet18_image_modelnet10_40views.ckpt')
+    # Example call:
+    # python pipeline/evaluate_pipeline.py --resnet_ckpt data/ckpt_files/resnets/ac348c87-resnet18_image_modelnet10_40views.ckpt
+    args = parser.parse_args()
+    resnet_ckpt = args.resnet_ckpt
+
+    method_list = ['pcd', 'random']
+    confidence_threshold_list = [0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5]
+    max_attempts_list = [5, 4, 3, 2]
+
+    # Try all combinations of ckpts
+    for pointnet_ckpt in pointnet_ckpts:
+        # convert to Paths
+        resnet_ckpt = root_dir / resnet_ckpt
+        pointnet_ckpt = root_dir / pointnet_ckpt
+
+        # Create the results dir, based on the ckpt names
+        results_dir = root_dir / f'results/evaluation_results_{resnet_ckpt.stem}/{pointnet_ckpt.stem}'
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        main(
+            method_list=['pcd', 'random'],
+            confidence_threshold_list=[0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5],
+            max_attempts_list=[5, 4, 3, 2],
+            results_dir=results_dir,
+            classification_model=resnet_ckpt,
+            pcd_entropy_prediction_model=pointnet_ckpt,
+            possible_viewpoints_path=root_dir / 'entropy_views_10.graphml' if '10views' in pointnet_ckpt.stem else root_dir / 'entropy_views_40.graphml'
+        )
