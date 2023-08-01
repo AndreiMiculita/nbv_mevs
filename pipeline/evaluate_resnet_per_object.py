@@ -10,12 +10,15 @@ id.
 import sys
 from pathlib import Path
 
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 import torchvision
 import tqdm
 
 from PIL import Image
+from torchvision import transforms
 
 # ckpts are one dir up in data/ckpt_files
 ckpt_dir = Path(__file__).parent.parent / 'data/per_object_evaluation/ckpt_files'
@@ -56,11 +59,6 @@ def main():
                 # Set the model to evaluation mode
                 resnet.eval()
 
-                # Define the test transforms
-                test_transforms = torchvision.transforms.Compose([
-                    torchvision.transforms.ToTensor(),
-                ])
-
                 # First we retrieve the test set filenames from modelnet10_test.txt
                 with open(dataset_dir / 'modelnet10_test.txt', 'r') as f:
                     test_set_filenames = f.readlines()
@@ -86,8 +84,9 @@ def main():
 
                 # We now have a dict of the form {(class_name, object_id): [(filename, theta, phi, vc), ...], ...}, we build a
                 # batch of 40 images for each object, and we evaluate the model on the batch
-                correct = 0
-                total = 0
+                correct_overall = 0
+                total_overall = 0
+                objects_where_majority_is_incorrect = []
                 for (class_name, object_id), filenames in tqdm.tqdm(test_set_filenames_grouped.items()):
                     correct_per_object = 0
                     total_per_object = 0
@@ -97,8 +96,25 @@ def main():
                     # Build the batch
                     batch = []
                     for filename, _, _, _ in filenames:
-                        image = Image.open(image_dataset_dir / class_name / filename)
-                        image = test_transforms(image)
+                        if 'depth' not in ckpt_file.name:
+                            image = cv2.imread(dataset_dir / class_name / filename)
+
+                            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                            image = cv2.resize(image, (224, 224))
+                            image = transforms.ToTensor()(image).to(device)
+                        else:
+                            image = Image.open(dataset_dir / class_name / filename)
+                            image = np.array(image)
+
+                            # Depth image only has 1 channel, we fake the other 2
+                            image = np.repeat(image[:, :, np.newaxis], 3, axis=2)
+
+                            # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                            image = cv2.resize(image, (224, 224))
+                            image = transforms.ToTensor()(image)
+                            image = image.float() / 255
+                            image = image.to(device)
+
                         batch.append(image)
                     batch = torch.stack(batch)
                     # Evaluate the model on the batch
@@ -107,8 +123,8 @@ def main():
                     with torch.no_grad():
                         outputs = resnet(batch)
                         _, predicted = torch.max(outputs.data, 1)
-                        total += len(predicted)
-                        correct += (predicted == torch.tensor(
+                        total_overall += len(predicted)
+                        correct_overall += (predicted == torch.tensor(
                             [class_names.index(class_name)] * len(predicted))).sum().item()
 
                         correct_per_object += (
@@ -123,12 +139,12 @@ def main():
                         # If most of the views are classified as the correct class
                         if (predicted == torch.tensor(
                                 [class_names.index(class_name)] * len(predicted))).sum().item() > len(
-                                predicted) / 2:
+                            predicted) / 2:
                             print(f'\tMajority is correct')
                             print(
                                 f'\tCorrect: {correct_per_object}, Total: {total_per_object}, Accuracy: {100 * correct_per_object / total_per_object:.2f}%')
                             print(
-                                f'\tCorrect overall: {correct}, Total: {total}, Accuracy: {100 * correct / total:.2f}%\n')
+                                f'\tCorrect overall: {correct_overall}, Total: {total_overall}, Accuracy: {100 * correct_overall / total_overall:.2f}%\n')
                         else:
                             print(f'\tMajority is incorrect!')
                             print(
@@ -144,9 +160,15 @@ def main():
                                 print(f'\t\t{class_name}: {outputs[0][i].item()},')
                             print('\t}\n')
                             print(
-                                f'\tCorrect overall: {correct}, Total: {total}, Accuracy: {100 * correct / total:.2f}%\n')
+                                f'\tCorrect overall: {correct_overall}, Total: {total_overall}, Accuracy: {100 * correct_overall / total_overall:.2f}%\n')
+                            objects_where_majority_is_incorrect.append((class_name, object_id, predicted.tolist()))
 
-                print(f'Accuracy of the network on the {total} test images: {100 * correct / total}%')
+                print(
+                    f'Accuracy of the network on the {total_overall} test images: {100 * correct_overall / total_overall}%')
+                print('Objects where majority is incorrect:')
+                for class_name, object_id, predicted in objects_where_majority_is_incorrect:
+                    print(f'\t{class_name}_{object_id}:\n{predicted}')
+                print('\n')
 
 
 if __name__ == '__main__':
