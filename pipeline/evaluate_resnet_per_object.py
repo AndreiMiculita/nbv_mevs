@@ -67,43 +67,43 @@ def main():
                 test_set_filenames = [filename.strip() for filename in test_set_filenames]
 
                 # We group the filenames by class + object id; the filenames are of the form
-                # {class_name}_{object_id}_theta_{theta}_phi_{phi}_vc_{view_counter}.png
+                # {label_class_name}_{object_id}_theta_{theta}_phi_{phi}_vc_{view_counter}.png
                 # Note that theta and phi and vc are in the filename
                 # Also discard the extension
                 test_set_filenames_grouped = {}
                 for filename in test_set_filenames:
                     filename_temp = filename.replace('night_stand', 'nightstand')
-                    class_name, object_id, _, theta, _, phi, _, vc = filename_temp.split('_')
+                    label_class_name, object_id, _, theta, _, phi, _, vc = filename_temp.split('_')
                     # Recover original class & filename
-                    class_name = class_name.replace('nightstand', 'night_stand')
+                    label_class_name = label_class_name.replace('nightstand', 'night_stand')
                     filename = filename + '.png'
-                    if (class_name, object_id) not in test_set_filenames_grouped:
-                        test_set_filenames_grouped[(class_name, object_id)] = []
-                    test_set_filenames_grouped[(class_name, object_id)].append(
+                    if (label_class_name, object_id) not in test_set_filenames_grouped:
+                        test_set_filenames_grouped[(label_class_name, object_id)] = []
+                    test_set_filenames_grouped[(label_class_name, object_id)].append(
                         (filename, float(theta), float(phi), int(vc)))
 
-                # We now have a dict of the form {(class_name, object_id): [(filename, theta, phi, vc), ...], ...}, we build a
+                # We now have a dict of the form {(label_class_name, object_id): [(filename, theta, phi, vc), ...], ...}, we build a
                 # batch of 40 images for each object, and we evaluate the model on the batch
                 correct_overall = 0
                 total_overall = 0
                 objects_where_majority_is_incorrect = []
-                for (class_name, object_id), filenames in tqdm.tqdm(test_set_filenames_grouped.items()):
+                for (label_class_name, object_id), filenames in tqdm.tqdm(test_set_filenames_grouped.items()):
                     correct_per_object = 0
                     total_per_object = 0
-                    print(f'Testing object {object_id} of class {class_name}')
+                    print(f'Testing object {object_id} of class {label_class_name}')
                     # Sort the filenames by theta, then by phi, then by vc
                     filenames.sort(key=lambda x: (x[1], x[2], x[3]))
                     # Build the batch
                     batch = []
                     for filename, _, _, _ in filenames:
                         if 'depth' not in ckpt_file.name:
-                            image = cv2.imread(str(dataset_dir / class_name / filename))
+                            image = cv2.imread(str(dataset_dir / label_class_name / filename))
 
                             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                             image = cv2.resize(image, (224, 224))
                             image = transforms.ToTensor()(image).to(device)
                         else:
-                            image = Image.open(str(dataset_dir / class_name / filename))
+                            image = Image.open(str(dataset_dir / label_class_name / filename))
                             image = np.array(image)
 
                             # Depth image only has 1 channel, we fake the other 2
@@ -124,22 +124,14 @@ def main():
                         outputs = resnet(batch)
                         _, predicted = torch.max(outputs.data, 1)
                         total_overall += len(predicted)
-                        correct_overall += (predicted == torch.tensor(
-                            [class_names.index(class_name)] * len(predicted))).sum().item()
 
-                        correct_per_object += (
-                                predicted == torch.tensor(
-                            [class_names.index(class_name)] * len(predicted))).sum().item()
+                        correct_overall += (predicted.cpu() == torch.tensor([class_names.index(label_class_name)] * len(predicted))).sum().item()
+                        correct_per_object += (predicted.cpu() == torch.tensor([class_names.index(label_class_name)] * len(predicted))).sum().item()
+
                         total_per_object += len(predicted)
 
-                        print(
-                            (predicted == torch.tensor([class_names.index(class_name)] * len(predicted))).sum().item(),
-                            len(predicted) / 2)
-
                         # If most of the views are classified as the correct class
-                        if (predicted == torch.tensor(
-                                [class_names.index(class_name)] * len(predicted))).sum().item() > len(
-                            predicted) / 2:
+                        if (predicted.cpu() == torch.tensor([class_names.index(label_class_name)] * len(predicted.cpu()))).sum().item() > len(predicted.cpu()) / 2:
                             print(f'\tMajority is correct')
                             print(
                                 f'\tCorrect: {correct_per_object}, Total: {total_per_object}, Accuracy: {100 * correct_per_object / total_per_object:.2f}%')
@@ -149,25 +141,25 @@ def main():
                             print(f'\tMajority is incorrect!')
                             print(
                                 f'\tCorrect: {correct_per_object}, Total: {total_per_object}, Accuracy: {100 * correct_per_object / total_per_object:.2f}%\n')
-                            if class_names[predicted[0]] != class_name:
-                                print(f'\tClassified as {class_names[predicted[0]]} instead of {class_name}')
+                            if class_names[predicted[0]] != label_class_name:
+                                print(f'\tClassified as {class_names[predicted[0]]} instead of {label_class_name}')
                             else:
                                 print(f'\tClassified as {class_names[predicted[0]]} but not by majority')
                             # Print probabilities as a dict, one line per class
                             print('\tProbabilities:')
                             print('\t{')
-                            for i, class_name in enumerate(class_names):
-                                print(f'\t\t{class_name}: {outputs[0][i].item()},')
+                            for i, classname in enumerate(class_names):
+                                print(f'\t\t{classname}: {outputs[0][i].item()},')
                             print('\t}\n')
                             print(
                                 f'\tCorrect overall: {correct_overall}, Total: {total_overall}, Accuracy: {100 * correct_overall / total_overall:.2f}%\n')
-                            objects_where_majority_is_incorrect.append((class_name, object_id, predicted.tolist()))
+                            objects_where_majority_is_incorrect.append((label_class_name, object_id, predicted.tolist()))
 
                 print(
                     f'Accuracy of the network on the {total_overall} test images: {100 * correct_overall / total_overall}%')
                 print('Objects where majority is incorrect:')
-                for class_name, object_id, predicted in objects_where_majority_is_incorrect:
-                    print(f'\t{class_name}_{object_id}:\n{predicted}')
+                for label_class_name, object_id, predicted in objects_where_majority_is_incorrect:
+                    print(f'\t{label_class_name}_{object_id}:\n{predicted}')
                 print('\n')
 
 
