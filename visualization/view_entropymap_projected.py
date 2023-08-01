@@ -19,7 +19,7 @@ for name, group in df_grouped:
     print(group)
 
     # Normalize the entropy, divide by the maximum entropy
-    group['entropy'] = group['entropy'] / group['entropy'].max()
+    group['entropy'] = group['entropy'] / 5.46
 
     print(group)
 

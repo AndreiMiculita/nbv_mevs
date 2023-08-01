@@ -55,7 +55,7 @@ ax1.cla() #clear the axis
 
 #plots the histogram data
 width = (bins[1] - bins[0]) * 0.5
-bins_shifted = bins + width
+bins_shifted = bins - width
 ax1.bar(bins[:-1], n[0], width, align='edge', color='C0', label="Train")
 ax2.bar(bins_shifted[:-1], n[1], width, align='edge', color='C1', label="Test")
 
