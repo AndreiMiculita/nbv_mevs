@@ -72,7 +72,6 @@ def main():
                 test_set_filenames_grouped = {}
                 for filename in test_set_filenames:
                     filename_temp = filename.replace('night_stand', 'nightstand')
-                    print(len(filename_temp.split('_')))
                     class_name, object_id, _, theta, _, phi, _, vc = filename_temp.split('_')
                     # Recover original class & filename
                     class_name = class_name.replace('nightstand', 'night_stand')
