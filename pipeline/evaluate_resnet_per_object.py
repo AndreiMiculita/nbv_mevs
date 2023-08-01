@@ -58,6 +58,7 @@ def main():
                 resnet.load_state_dict(torch.load(ckpt_file))
                 # Set the model to evaluation mode
                 resnet.eval()
+                resnet = resnet.to(device)
 
                 # First we retrieve the test set filenames from modelnet10_test.txt
                 with open(dataset_dir / 'modelnet10_test.txt', 'r') as f:
@@ -96,13 +97,13 @@ def main():
                     batch = []
                     for filename, _, _, _ in filenames:
                         if 'depth' not in ckpt_file.name:
-                            image = cv2.imread(dataset_dir / class_name / filename)
+                            image = cv2.imread(str(dataset_dir / class_name / filename))
 
                             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                             image = cv2.resize(image, (224, 224))
                             image = transforms.ToTensor()(image).to(device)
                         else:
-                            image = Image.open(dataset_dir / class_name / filename)
+                            image = Image.open(str(dataset_dir / class_name / filename))
                             image = np.array(image)
 
                             # Depth image only has 1 channel, we fake the other 2
