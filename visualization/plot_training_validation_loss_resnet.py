@@ -18,6 +18,8 @@ data_dir = root_dir / "data"
 training_logs_dir = data_dir / "training_logs"
 assets_dir = root_dir / "assets"
 
+epoch_counts = []
+
 
 def main(filename):
     file = training_logs_dir / filename
@@ -51,13 +53,13 @@ def main(filename):
     print(f'Val loss: {val_loss}')
     print(f'file: {file}')
 
-    steps_per_epoch = len(train_loss) // len(val_loss)
+    steps_per_epoch = len(train_loss) / len(val_loss)
 
-    plt.plot(np.array(range(1, len(train_loss) + 1)) / steps_per_epoch, train_loss, label="Training Loss")
-    plt.plot(np.array(range(steps_per_epoch, len(train_loss) + 1, steps_per_epoch)) / steps_per_epoch, val_loss,
-             label="Validation Loss")
+    # Plot the training and validation loss
+    plt.plot(np.arange(len(train_loss)), train_loss, label="Training")
+    plt.plot(np.arange(len(val_loss)) * steps_per_epoch + steps_per_epoch, val_loss, label="Validation")
 
-    plt.xlabel("Epoch")
+    plt.xlabel("Step")
     plt.ylabel("Loss")
     plt.title(f"Training and Validation Loss for model {filename.split('_')[0].replace('resnet', 'ResNet-')},"
               f" {filename.split('_')[2][:2]} {filename.split('_')[1]} views")
@@ -72,6 +74,8 @@ def main(filename):
     print("Final training loss: ", train_loss[-1])
     print("Final validation loss: ", val_loss[-1])
 
+    epoch_counts.append(len(val_loss))
+
 
 if __name__ == "__main__":
     for filename in [
@@ -81,3 +85,4 @@ if __name__ == "__main__":
         'resnet34_depth_40views_training_output.txt',
     ]:
         main(filename)
+    print(epoch_counts)
