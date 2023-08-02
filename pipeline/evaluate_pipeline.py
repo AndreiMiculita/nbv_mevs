@@ -146,7 +146,7 @@ if __name__ == '__main__':
         results_dir.mkdir(parents=True, exist_ok=True)
 
         main(
-            method_list=['pcd', 'random'],
+            method_list=['pcd', 'random', 'oracle'],
             confidence_threshold_list=[0.99, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5],
             max_attempts_list=[5, 4, 3, 2],
             results_dir=results_dir,

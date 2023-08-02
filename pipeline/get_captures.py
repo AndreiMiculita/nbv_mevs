@@ -19,6 +19,7 @@ from typing import Union
 
 import cv2
 import numpy as np
+import pandas as pd
 import open3d as o3d
 from PIL import Image
 
@@ -30,19 +31,22 @@ def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="depth",
     :param mesh_path: The path to the mesh.
     :param theta: angle in radians [0 - pi]
     :param phi: angle in radians [0 - 2pi]
-    :param capture_type: The type of capture to retrieve. Can be "image", "depth" or "pcd"
+    :param capture_type: The type of capture to retrieve. Can be "image", "depth", "pcd", or "entropy".
+                         The entropy capture is per object, so it doesn't need theta and phi.
     :param nviews: The number of views to capture
-    :return: The capture of the mesh at the specified theta and phi.
+    :return: The capture of the specified type, or None if the capture doesn't exist.
     """
 
     if nviews == 10:
         image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-dataset-mnet10-10views"
         depth_dataset_path = Path(__file__).resolve().parent.parent / "data" / "depth-dataset-mnet10-10views-test"
         point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "pcd-dataset-mnet10-10views"
+        entropy_csv_path = Path(__file__).resolve().parent.parent / "data" / "pcd-dataset-mnet10-10views" / "entropy_dataset.csv"
     elif nviews == 40:
         image_dataset_path = Path(__file__).resolve().parent.parent / "data" / "image-dataset-mnet10-40views"
         depth_dataset_path = Path(__file__).resolve().parent.parent / "data" / "depth-dataset-mnet10-40views"
         point_cloud_dataset_path = Path(__file__).resolve().parent.parent / "data" / "pcd-dataset-mnet10-40views-test"
+        entropy_csv_path = Path(__file__).resolve().parent.parent / "data" / "pcd-dataset-mnet10-40views-test" / "entropy_dataset.csv"
     else:
         raise ValueError("Invalid number of views: {}".format(nviews))
 
@@ -50,14 +54,25 @@ def get_capture(mesh_path: Path, theta: float, phi: float, capture_type="depth",
         dataset_path = image_dataset_path
     elif capture_type == "depth":
         dataset_path = depth_dataset_path
-    else:
+    elif capture_type == "pcd":
         dataset_path = point_cloud_dataset_path
+    else:
+        dataset_path = entropy_csv_path
 
     # Get the class name from the mesh path
     class_name = mesh_path.parent.parent.stem
 
     # Get the object index from the mesh path
     object_index = mesh_path.stem.split("_")[-1]
+
+    # For the entropy dataset, this is all we need; return entropies in the table that match the class name and object
+    # index, sorted by view code
+    if capture_type == "entropy":
+        entropy_table = pd.read_csv(dataset_path / "entropy_dataset.csv")
+        entropy_table = entropy_table[(entropy_table["label"] == class_name) & (entropy_table["obj_ind"] == int(object_index))]
+        entropy_table = entropy_table.sort_values(by=["code"])
+        entropies = entropy_table["entropy"].values
+        return entropies
 
     # Convert from radians to degrees
     theta = round(np.degrees(theta))

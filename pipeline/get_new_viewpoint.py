@@ -20,7 +20,7 @@ def get_new_viewpoint_coords(mesh_path: Path,
     Chooses a next best viewpoint for recognizing an object from a mesh.
     :param mesh_path: The path to the mesh.
     :param attempted_viewpoints: List of attempted viewpoints, in (theta, phi) format
-    :param method: Method for choosing a new viewpoint. Can be "random", "diff", or "pcd"
+    :param method: Method for choosing a new viewpoint. Can be "random", "pcd", or "oracle".
     :param possible_viewpoints_graph: The possible viewpoints, with neighbors
     :param pcd_model_path: Path to the point cloud embedding network model
     :param differentiable_rendering_model: Path to the differentiable rendering model
@@ -33,13 +33,13 @@ def get_new_viewpoint_coords(mesh_path: Path,
     if method == "random":
         random_node = random.choice(possible_viewpoints_graph)
         return random_node.theta, random_node.phi
-    elif method == "diff":
-        return with_differentiable_renderer(mesh_path, attempted_viewpoints, differentiable_rendering_model)
     elif method == "pcd":
         if pcd_model_path is None or not pcd_model_path.exists():
             raise ValueError(f"pcd_model_path {[pcd_model_path]} must be specified and must exist for method 'pcd'")
         return with_point_cloud_embedding_network(mesh_path, attempted_viewpoints, pcd_model_path,
                                                   possible_viewpoints_graph)
+    elif method == "oracle":
+        return with_oracle(mesh_path, attempted_viewpoints, possible_viewpoints_graph)
 
     raise ValueError("Invalid method: {}".format(method))
 
@@ -132,7 +132,7 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
     try:
         local_maxima = list(find_local_maximum_nodes(copy.deepcopy(possible_viewpoints_graph)))
     except TypeError as e:
-        print("TYPE ERROR WTF")
+        print("TYPE ERROR")
         for node in possible_viewpoints_graph:
             print(f'Node: {node.name}'
                   f'\n\ttheta: {node.theta}'
@@ -157,7 +157,6 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
     local_maxima.sort(key=lambda x: x.weight, reverse=True)
 
     # Pick the highest entropy view; if already attempted, pick next one and so on; return it
-    # Note that we're working with floats so best to use np.isclose
     for node in local_maxima:
         attempted = False
         for attempted_viewpoint in attempted_viewpoints:
@@ -179,5 +178,84 @@ def with_point_cloud_embedding_network(mesh_path: Path, attempted_viewpoints: Li
         if not attempted:
             return node.theta, node.phi
 
-    # If all the views have been attempted, raise an error
+    raise ValueError("All viewpoints have been attempted, still not sure")
+
+
+def with_oracle(mesh_path: Path, attempted_viewpoints: List[Tuple[float, float]],
+                possible_viewpoints_graph: List[Node]) \
+        -> Tuple[float, float]:
+    """
+    Choose a new viewpoint for a mesh using the oracle.
+    The oracle always knows the entropies of all viewpoints exactly.
+    Returns the viewpoint with the highest entropy that hasn't been attempted yet (prefers local maxima).
+
+    :param mesh_path: The path to the mesh.
+    :param attempted_viewpoints: List of attempted viewpoints
+    :param possible_viewpoints_graph: The possible viewpoints, with neighbors
+
+    :return: Tuple of floats: (theta, phi)
+     theta: angle in radians [0 - pi]
+     phi: angle in radians [0 - 2pi]
+    """
+    from node_weighted_graph.find_local_maximum_nodes import find_local_maximum_nodes
+
+    # Get entropies from the entropy table
+    entropies = get_capture(mesh_path, -1, -1, capture_type="entropy", nviews=len(possible_viewpoints_graph))
+
+    # Build view graph structure; entropy should have the same length as possible_viewpoints_graph
+    if len(entropies) != len(possible_viewpoints_graph):
+        raise ValueError("Length of entropy table does not match length of view graph.")
+
+    for i, node in enumerate(possible_viewpoints_graph):
+        node.weight = entropies[i]
+
+    try:
+        local_maxima = list(find_local_maximum_nodes(copy.deepcopy(possible_viewpoints_graph)))
+    except TypeError as e:
+        print("TYPE ERROR")
+        for node in possible_viewpoints_graph:
+            print(f'Node: {node.name}'
+                  f'\n\ttheta: {node.theta}'
+                  f'\n\tphi: {node.phi}'
+                  f'\n\tweight: {node.weight}'
+                  f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
+        # This happens very rarely, so we just write to a file and continue
+        with open("type_error.txt", "a") as f:
+            f.write(f'mesh_path')
+            f.write(f'attempted_viewpoints')
+            f.write(f'pcd_model_path')
+            for node in possible_viewpoints_graph:
+                f.write(f'Node: {node.name}'
+                        f'\n\ttheta: {node.theta}'
+                        f'\n\tphi: {node.phi}'
+                        f'\n\tweight: {node.weight}'
+                        f'\n\tneighbors: {[neighbor.name for neighbor in node.neighbors]}')
+        # Return a random viewpoint
+        random_node = random.choice(possible_viewpoints_graph)
+        return random_node.theta, random_node.phi
+
+    local_maxima.sort(key=lambda x: x.weight, reverse=True)
+
+    # Pick the highest entropy view; if already attempted, pick next one and so on; return it
+    for node in local_maxima:
+        attempted = False
+        for attempted_viewpoint in attempted_viewpoints:
+            if np.isclose(node.theta, attempted_viewpoint[0]) and np.isclose(node.phi, attempted_viewpoint[1]):
+                attempted = True
+                break
+        if not attempted:
+            return node.theta, node.phi
+
+    # If all the local maxima have been attempted, sort all views by entropy,
+    # and return the first one that hasn't been attempted
+    possible_viewpoints_graph.sort(key=lambda x: x.weight, reverse=True)
+    for node in possible_viewpoints_graph:
+        attempted = False
+        for attempted_viewpoint in attempted_viewpoints:
+            if np.isclose(node.theta, attempted_viewpoint[0]) and np.isclose(node.phi, attempted_viewpoint[1]):
+                attempted = True
+                break
+        if not attempted:
+            return node.theta, node.phi
+
     raise ValueError("All viewpoints have been attempted, still not sure")
