@@ -114,7 +114,9 @@ def main(
                                 end='')
                     except KeyError:
                         print('         - & ', end='')
-                print('\\\\ \\hline')
+                # delete the last 2 characters, which are '& '
+                print('\b\b', end='')
+                print('\\\\ \\hline' if method == 'pcd' else '\\\\')
 
 
 if __name__ == '__main__':
