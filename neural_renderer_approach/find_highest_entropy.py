@@ -17,7 +17,7 @@ from skimage.io import imread, imsave
 import canny_filter
 import neural_renderer as nr
 
-from load_off import load_off
+from mesh_utils.load_off import load_off
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, '../data')
@@ -124,6 +124,7 @@ def main(args: List[str] = None):
         if loss.item() < 70:
             break
     make_gif(args.filename_output)
+    print(f'Max memory allocated: {torch.cuda.max_memory_allocated() / 1024 ** 2:.0f} MB')
 
 
 if __name__ == '__main__':

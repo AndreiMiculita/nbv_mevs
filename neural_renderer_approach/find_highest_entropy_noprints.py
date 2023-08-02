@@ -18,7 +18,7 @@ from collections import deque
 import canny_filter
 import neural_renderer as nr
 
-from load_off import load_off
+from mesh_utils.load_off import load_off
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, '../data')

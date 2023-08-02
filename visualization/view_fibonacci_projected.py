@@ -81,12 +81,16 @@ def main():
     # view the spherical coords on a 2d scatter plot
     ax = plt.axes()
     ax.scatter(spherical[:, 2], spherical[:, 0])
+    # Add label to each point with the index
+    for i, txt in enumerate(range(len(spherical))):
+        ax.annotate(txt, (spherical[i, 2] + 3, spherical[i, 0] + 3))
     ax.set_ylabel("theta")
     ax.set_xlabel("phi")
     # equal axes
     ax.set_aspect('equal', adjustable='box')
 
     plt.savefig("../assets/fibonacci_sphere_vertices/fibonacci_sphere_spherical_coords_2d.pdf", bbox_inches='tight')
+    plt.show()
 
 
 if __name__ == "__main__":

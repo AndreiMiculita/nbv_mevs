@@ -30,6 +30,10 @@ for name, group in df_grouped:
     # Plot the centroids
     scatter = plt.scatter(group['rot_y'], group['rot_x'], c=group['entropy'], cmap=cmap, norm=normalize)
 
+    # Print the rot_x and rot_y of the top 3 and bottom 3 entropies
+    print(group.nlargest(3, 'entropy')[['rot_x', 'rot_y']])
+    print(group.nsmallest(3, 'entropy')[['rot_x', 'rot_y']])
+
     # Add axis labels
     plt.xlabel('phi')
     plt.ylabel('theta')

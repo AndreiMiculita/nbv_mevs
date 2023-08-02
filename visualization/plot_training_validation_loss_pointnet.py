@@ -9,8 +9,8 @@ import pandas as pd
 # The csv files are exported from Tensorboard, they are expected to contain the columns "Wall time", "Step" and "Value"
 
 def main():
-    train_file = "../data/training_logs/pointnet10views/run-version_49-tag-train_loss.csv"
-    val_file = "../data/training_logs/pointnet10views/run-version_49-tag-val_loss.csv"
+    train_file = "../data/training_logs/pointnet40views/run-version_3-tag-train_loss.csv"
+    val_file = "../data/training_logs/pointnet40views/run-version_3-tag-val_loss.csv"
 
     train_table = pd.read_csv(train_file)
     val_table = pd.read_csv(val_file)
@@ -29,7 +29,7 @@ def main():
     # Create assets dir if it doesn't exist
     if not os.path.exists("../assets/pointnet/"):
         os.makedirs("../assets/pointnet/")
-    plt.savefig("../assets/pointnet/training_validation_loss_10views.pdf")
+    plt.savefig("../assets/pointnet/training_validation_loss_40views.pdf")
     plt.show()
 
     print("Final training loss: ", train_table["Value"].iloc[-1])
