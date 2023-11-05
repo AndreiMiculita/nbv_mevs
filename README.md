@@ -1,6 +1,9 @@
 # Finding the Next Best View for Object Recognition through Maximum Entropy Viewpoint Selection
 
 A collection of scripts related to my Master's thesis - a method for finding the most informative camera positions for multiview object recognition.
+
+**Thesis Report PDF: https://drive.google.com/file/d/1bxV0k1IZEmBeeNDRbrTXAjw1fXbQj_C8/view** (soon to be published at https://fse.studenttheses.ub.rug.nl/31411/)
+
 There are two methods: one based on differentiable rendering and one based on point clouds (see thesis report for details).
 They are both implemented in PyTorch.
 
